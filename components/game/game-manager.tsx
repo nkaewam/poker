@@ -1,13 +1,23 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useQueryState } from "nuqs";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -39,6 +49,7 @@ interface GameManagerProps {
 }
 
 export function GameManager({ gameCode, playerName }: GameManagerProps) {
+  const router = useRouter();
   const [tab, setTab] = useQueryState("tab", {
     defaultValue: "players",
     parse: (value) => {
@@ -47,6 +58,14 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
     },
     serialize: (value) => value,
   });
+  const [isQrCodeOpen, setIsQrCodeOpen] = useState(false);
+  const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
+
+  // Construct join URL for QR code
+  const joinUrl = useMemo(() => {
+    if (!gameCode || typeof window === "undefined") return "";
+    return `${window.location.origin}/join?game-code=${gameCode}`;
+  }, [gameCode]);
 
   // Fetch game data with polling
   const { data: game, isLoading, error } = useGame(gameCode);
@@ -65,6 +84,11 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
   const addBuyInMutation = useAddBuyIn(gameCode || "");
   const removeBuyInMutation = useRemoveBuyIn(gameCode || "");
   const updateFinalMutation = useUpdateFinal(gameCode || "");
+
+  const handleLeaveGame = useCallback(() => {
+    setIsLeaveDialogOpen(false);
+    router.push("/");
+  }, [router]);
 
   // Auto-add player when joining with a name (only if game exists and no players)
   useEffect(() => {
@@ -201,19 +225,100 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
         {/* Header */}
         <div className="mb-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
+            <div className="space-y-3">
               <h1 className="text-2xl font-bold">Poker Accounting</h1>
               {gameCode && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>Game Code:</span>
-                  <code className="font-mono font-semibold text-foreground px-2 py-0.5 rounded bg-muted">
-                    {gameCode}
-                  </code>
+                <div className="space-y-2">
+                  <span className="text-sm text-muted-foreground">Game Code</span>
+                  <button
+                    onClick={() => setIsQrCodeOpen(true)}
+                    className="block w-fit cursor-pointer transition-all hover:scale-105 active:scale-95"
+                  >
+                    <code className="font-mono text-4xl font-bold text-foreground px-4 py-3 rounded-lg bg-muted border-2 border-foreground/20 hover:border-foreground/40 hover:bg-muted/80 transition-colors inline-block">
+                      {gameCode}
+                    </code>
+                  </button>
                 </div>
               )}
             </div>
+            {gameCode && (
+              <Button
+                variant="outline"
+                onClick={() => setIsLeaveDialogOpen(true)}
+                className="w-fit"
+              >
+                Leave Game
+              </Button>
+            )}
           </div>
         </div>
+
+        {/* QR Code Modal */}
+        {gameCode && (
+          <Dialog open={isQrCodeOpen} onOpenChange={setIsQrCodeOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Scan to Join Game</DialogTitle>
+                <DialogDescription>
+                  Share this QR code so others can join the game
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col items-center justify-center space-y-4 py-4">
+                {joinUrl && (
+                  <div className="rounded-lg border-2 border-foreground/20 p-4 bg-white">
+                    <QRCodeSVG
+                      value={joinUrl}
+                      size={256}
+                      level="H"
+                      includeMargin={true}
+                    />
+                  </div>
+                )}
+                <div className="text-center space-y-1">
+                  <p className="text-sm text-muted-foreground">Game Code</p>
+                  <code className="text-2xl font-mono font-bold">{gameCode}</code>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Leave Game Confirmation Dialog */}
+        {gameCode && (
+          <Dialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Leave Game?</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to leave this game? You can rejoin later using the game code.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="rounded-md border bg-card p-4 text-center">
+                  <p className="text-sm text-muted-foreground mb-2">Game Code</p>
+                  <code className="text-2xl font-mono font-bold">{gameCode}</code>
+                </div>
+                <p className="text-sm text-muted-foreground text-center">
+                  Save this code to rejoin the game later.
+                </p>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsLeaveDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleLeaveGame}
+                >
+                  Leave Game
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* Tabs */}
         <div className="mb-6 flex flex-wrap gap-2 border-b">

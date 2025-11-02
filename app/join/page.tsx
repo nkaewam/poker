@@ -44,7 +44,7 @@ function JoinGameForm() {
   const joinGameMutation = useJoinGame();
   const { data: lastPlayerNameData } = useLastPlayerName();
 
-  const gameCodeParam = searchParams.get("game_code");
+  const gameCodeParam = searchParams.get("game-code");
 
   const form = useForm<JoinFormValues>({
     resolver: zodResolver(joinFormSchema),

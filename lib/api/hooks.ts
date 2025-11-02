@@ -11,13 +11,15 @@ import {
   removeBuyIn,
   updateFinal,
   getLastPlayerName,
-  type CreateGameRequest,
-  type JoinGameRequest,
-  type AddPlayerRequest,
-  type UpdatePlayerRequest,
-  type AddBuyInRequest,
-  type UpdateFinalRequest,
 } from "@/lib/api/client";
+import type {
+  CreateGameRequest,
+  JoinGameRequest,
+  AddPlayerRequest,
+  UpdatePlayerRequest,
+  AddBuyInRequest,
+  UpdateFinalRequest,
+} from "@/lib/api/schemas";
 
 /**
  * Query key factory

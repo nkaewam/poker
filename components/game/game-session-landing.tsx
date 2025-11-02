@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -20,7 +20,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useCreateGame, useJoinGame } from "@/lib/api/hooks";
+import { useCreateGame, useJoinGame, useLastPlayerName } from "@/lib/api/hooks";
 
 type Flow = "initial" | "create" | "join";
 
@@ -52,6 +52,7 @@ export function GameSessionLanding() {
 
   const createGameMutation = useCreateGame();
   const joinGameMutation = useJoinGame();
+  const { data: lastPlayerNameData } = useLastPlayerName();
 
   const createForm = useForm<PlayerNameFormValues>({
     resolver: zodResolver(playerNameSchema),
@@ -68,12 +69,31 @@ export function GameSessionLanding() {
     },
   });
 
+  // Prefill name when flow changes or when last player name loads
+  useEffect(() => {
+    if (lastPlayerNameData?.name) {
+      if (flow === "create") {
+        createForm.setValue("playerName", lastPlayerNameData.name);
+      } else if (flow === "join") {
+        joinForm.setValue("playerName", lastPlayerNameData.name);
+      }
+    }
+  }, [flow, lastPlayerNameData, createForm, joinForm]);
+
   const handleCreateGame = () => {
     setFlow("create");
+    // Prefill name if available
+    if (lastPlayerNameData?.name) {
+      createForm.setValue("playerName", lastPlayerNameData.name);
+    }
   };
 
   const handleJoinGame = () => {
     setFlow("join");
+    // Prefill name if available
+    if (lastPlayerNameData?.name) {
+      joinForm.setValue("playerName", lastPlayerNameData.name);
+    }
   };
 
   const handleCreateSubmit = async (data: PlayerNameFormValues) => {

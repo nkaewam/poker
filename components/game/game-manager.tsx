@@ -30,6 +30,7 @@ import {
   useAddBuyIn,
   useRemoveBuyIn,
   useUpdateFinal,
+  useLastPlayerName,
 } from "@/lib/api/hooks";
 import { transformGameToState } from "@/lib/api/transform";
 
@@ -429,6 +430,8 @@ const playerNameSchema = z.object({
 type PlayerNameFormValues = z.infer<typeof playerNameSchema>;
 
 function PlayerInput({ onSubmit }: PlayerInputProps) {
+  const { data: lastPlayerNameData } = useLastPlayerName();
+  
   const form = useForm<PlayerNameFormValues>({
     resolver: zodResolver(playerNameSchema),
     defaultValues: {
@@ -436,9 +439,20 @@ function PlayerInput({ onSubmit }: PlayerInputProps) {
     },
   });
 
+  // Prefill name when last player name loads
+  useEffect(() => {
+    if (lastPlayerNameData?.name && !form.getValues("name")) {
+      form.setValue("name", lastPlayerNameData.name);
+    }
+  }, [lastPlayerNameData, form]);
+
   const handleSubmit = (data: PlayerNameFormValues) => {
     onSubmit(data.name.trim());
     form.reset();
+    // Reset to last player name after submission
+    if (lastPlayerNameData?.name) {
+      form.setValue("name", lastPlayerNameData.name);
+    }
   };
 
   return (

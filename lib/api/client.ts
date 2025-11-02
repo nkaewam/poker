@@ -192,3 +192,11 @@ export async function updateFinal(
   return finalResponseSchema.parse(data);
 }
 
+/**
+ * Get the last player name used in the current session
+ */
+export async function getLastPlayerName(): Promise<{ name: string | null }> {
+  const data = await fetchAPI<{ name: string | null }>("/session/last-player-name");
+  return data;
+}
+

@@ -11,6 +11,7 @@ import {
   addBuyIn,
   removeBuyIn,
   updateFinal,
+  getLastPlayerName,
   type CreateGameRequest,
   type JoinGameRequest,
   type AddPlayerRequest,
@@ -166,6 +167,17 @@ export function useUpdateFinal(gameCode: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: gameKeys.detail(gameCode) });
     },
+  });
+}
+
+/**
+ * Get the last player name used in the current session
+ */
+export function useLastPlayerName() {
+  return useQuery({
+    queryKey: ["session", "last-player-name"],
+    queryFn: () => getLastPlayerName(),
+    staleTime: Infinity, // This data doesn't change often
   });
 }
 

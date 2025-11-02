@@ -2,9 +2,19 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useQueryState } from "nuqs";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
 import { ResultsSettlement } from "@/components/game/results-settlement";
 import {
   loadGameState,
@@ -19,7 +29,12 @@ import { type PlayerResult } from "@/lib/settlement";
 
 type Tab = "players" | "buyins" | "finals" | "results";
 
-export function GameManager() {
+interface GameManagerProps {
+  gameCode?: string;
+  playerName?: string;
+}
+
+export function GameManager({ gameCode, playerName }: GameManagerProps) {
   const [tab, setTab] = useQueryState("tab", {
     defaultValue: "players",
     parse: (value) => {
@@ -43,6 +58,20 @@ export function GameManager() {
     }
   }, []);
 
+  // Auto-add player name when joining with a name (mock behavior)
+  useEffect(() => {
+    if (playerName && state.players.length === 0) {
+      // Only auto-add if no players exist yet (to avoid duplicates on re-renders)
+      const id = crypto.randomUUID();
+      setState((prev) => ({
+        ...prev,
+        players: [...prev.players, { id, name: playerName }],
+        buyIns: { ...prev.buyIns, [id]: [] },
+        finals: { ...prev.finals, [id]: null },
+      }));
+    }
+  }, [playerName, state.players.length]);
+
   // Save to localStorage whenever state changes
   useEffect(() => {
     if (state.players.length > 0 || Object.keys(state.buyIns).length > 0) {
@@ -52,7 +81,7 @@ export function GameManager() {
 
   const addPlayer = useCallback((name: string) => {
     if (!name.trim()) return;
-    
+
     const id = crypto.randomUUID();
     setState((prev) => ({
       ...prev,
@@ -68,7 +97,7 @@ export function GameManager() {
       const newFinals = { ...prev.finals };
       delete newBuyIns[id];
       delete newFinals[id];
-      
+
       return {
         players: prev.players.filter((p) => p.id !== id),
         buyIns: newBuyIns,
@@ -88,7 +117,7 @@ export function GameManager() {
 
   const addBuyIn = useCallback((playerId: string, amount: number) => {
     if (amount <= 0) return;
-    
+
     setState((prev) => ({
       ...prev,
       buyIns: {
@@ -179,7 +208,7 @@ export function GameManager() {
     );
     const final = state.finals[player.id] ?? 0;
     const net = final - totalBuyIns;
-    
+
     return {
       playerId: player.id,
       net,
@@ -216,7 +245,17 @@ export function GameManager() {
         {/* Header */}
         <div className="mb-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h1 className="text-2xl font-bold">Poker Accounting</h1>
+            <div className="space-y-1">
+              <h1 className="text-2xl font-bold">Poker Accounting</h1>
+              {gameCode && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Game Code:</span>
+                  <code className="font-mono font-semibold text-foreground px-2 py-0.5 rounded bg-muted">
+                    {gameCode}
+                  </code>
+                </div>
+              )}
+            </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={handleImport}>
                 Import
@@ -237,11 +276,10 @@ export function GameManager() {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
-                tab === t.id
+              className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${tab === t.id
                   ? "border-primary text-primary"
                   : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
+                }`}
             >
               {t.label}
             </button>
@@ -291,7 +329,7 @@ export function GameManager() {
                 {state.players.map((player) => {
                   const buyIns = state.buyIns[player.id] || [];
                   const total = buyIns.reduce((sum, amount) => sum + amount, 0);
-                  
+
                   return (
                     <BuyInSection
                       key={player.id}
@@ -325,7 +363,7 @@ export function GameManager() {
                       0
                     );
                     const final = state.finals[player.id];
-                    
+
                     return (
                       <FinalInput
                         key={player.id}
@@ -383,29 +421,54 @@ interface PlayerInputProps {
   onSubmit: (name: string) => void;
 }
 
-function PlayerInput({ onSubmit }: PlayerInputProps) {
-  const [name, setName] = useState("");
+const playerNameSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Name is required")
+    .max(50, "Name must be less than 50 characters"),
+});
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (name.trim()) {
-      onSubmit(name);
-      setName("");
-    }
+type PlayerNameFormValues = z.infer<typeof playerNameSchema>;
+
+function PlayerInput({ onSubmit }: PlayerInputProps) {
+  const form = useForm<PlayerNameFormValues>({
+    resolver: zodResolver(playerNameSchema),
+    defaultValues: {
+      name: "",
+    },
+  });
+
+  const handleSubmit = (data: PlayerNameFormValues) => {
+    onSubmit(data.name.trim());
+    form.reset();
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2">
-      <Input
-        type="text"
-        placeholder="Player name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        className="flex-1"
-        autoFocus
-      />
-      <Button type="submit">Add</Button>
-    </form>
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(handleSubmit)}
+        className="flex gap-2"
+      >
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem className="flex-1">
+              <FormControl>
+                <Input
+                  placeholder="Player name"
+                  className="flex-1"
+                  autoFocus
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit">Add</Button>
+      </form>
+    </Form>
   );
 }
 
@@ -505,7 +568,7 @@ function BuyInSection({
           Total: {formatCurrency(total)}
         </span>
       </div>
-      
+
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" onClick={() => onAdd(20)}>
           +฿20
@@ -610,11 +673,10 @@ function FinalInput({
         <div className="mt-2 text-sm">
           <span className="text-muted-foreground">Net: </span>
           <span
-            className={`font-semibold ${
-              value - totalBuyIns >= 0
+            className={`font-semibold ${value - totalBuyIns >= 0
                 ? "text-green-600 dark:text-green-500"
                 : "text-red-600 dark:text-red-500"
-            }`}
+              }`}
           >
             {value - totalBuyIns >= 0 ? "+" : ""}
             {formatCurrency(value - totalBuyIns)}

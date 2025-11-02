@@ -17,10 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/spinner";
 import { ResultsSettlement } from "@/components/game/results-settlement";
-import {
-  exportGameState,
-  type GameState,
-} from "@/lib/storage";
+import { type GameState } from "@/lib/storage";
 import { formatCurrency, parseCurrency } from "@/lib/format";
 import { type PlayerResult } from "@/lib/settlement";
 import {
@@ -131,37 +128,6 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
     [gameCode, updateFinalMutation]
   );
 
-  const handleReset = useCallback(() => {
-    if (
-      confirm(
-        "Are you sure you want to reset the game? This will clear all data."
-      )
-    ) {
-      // Reset is not supported via API - would need to delete all players/buy-ins/finals
-      // For now, just show a message
-      alert(
-        "Reset functionality is not available. Please manually remove all players."
-      );
-    }
-  }, []);
-
-  const handleExport = useCallback(() => {
-    const json = exportGameState(state);
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `poker-game-${new Date().toISOString().split("T")[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, [state]);
-
-  const handleImport = useCallback(() => {
-    alert("Import functionality is not available with backend integration.");
-  }, []);
-
   // Calculate results
   const playerNames = Object.fromEntries(
     state.players.map((p) => [p.id, p.name])
@@ -245,17 +211,6 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
                   </code>
                 </div>
               )}
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleImport}>
-                Import
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                Export
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleReset}>
-                Reset
-              </Button>
             </div>
           </div>
         </div>

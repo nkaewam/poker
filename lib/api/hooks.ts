@@ -7,7 +7,6 @@ import {
   joinGame,
   addPlayer,
   updatePlayer,
-  removePlayer,
   addBuyIn,
   removeBuyIn,
   updateFinal,
@@ -94,20 +93,6 @@ export function useUpdatePlayer(gameCode: string) {
       ...request
     }: UpdatePlayerRequest & { playerId: string }) =>
       updatePlayer(gameCode, playerId, request),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: gameKeys.detail(gameCode) });
-    },
-  });
-}
-
-/**
- * Remove a player from a game
- */
-export function useRemovePlayer(gameCode: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (playerId: string) => removePlayer(gameCode, playerId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: gameKeys.detail(gameCode) });
     },

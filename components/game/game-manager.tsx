@@ -15,6 +15,7 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
+import { Spinner } from "@/components/ui/spinner";
 import { ResultsSettlement } from "@/components/game/results-settlement";
 import {
   exportGameState,
@@ -26,7 +27,6 @@ import {
   useGame,
   useAddPlayer,
   useUpdatePlayer,
-  useRemovePlayer,
   useAddBuyIn,
   useRemoveBuyIn,
   useUpdateFinal,
@@ -65,7 +65,6 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
   // Mutations
   const addPlayerMutation = useAddPlayer(gameCode || "");
   const updatePlayerMutation = useUpdatePlayer(gameCode || "");
-  const removePlayerMutation = useRemovePlayer(gameCode || "");
   const addBuyInMutation = useAddBuyIn(gameCode || "");
   const removeBuyInMutation = useRemoveBuyIn(gameCode || "");
   const updateFinalMutation = useUpdateFinal(gameCode || "");
@@ -83,14 +82,6 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
       addPlayerMutation.mutate({ name: name.trim() });
     },
     [gameCode, addPlayerMutation]
-  );
-
-  const removePlayer = useCallback(
-    (id: string) => {
-      if (!gameCode) return;
-      removePlayerMutation.mutate(id);
-    },
-    [gameCode, removePlayerMutation]
   );
 
   const updatePlayerName = useCallback(
@@ -290,7 +281,10 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
           <div className="space-y-4">
             <div>
               <h2 className="text-lg font-semibold mb-3">Add Player</h2>
-              <PlayerInput onSubmit={addPlayer} />
+              <PlayerInput
+                onSubmit={addPlayer}
+                isLoading={addPlayerMutation.isPending}
+              />
             </div>
             <Separator />
             <div>
@@ -306,7 +300,7 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
                       key={player.id}
                       player={player}
                       onUpdateName={(name) => updatePlayerName(player.id, name)}
-                      onRemove={() => removePlayer(player.id)}
+                      isLoading={updatePlayerMutation.isPending}
                     />
                   ))}
                 </div>
@@ -337,6 +331,8 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
                       total={total}
                       onAdd={(amount) => addBuyIn(player.id, amount)}
                       onRemove={(index) => removeBuyIn(player.id, index)}
+                      isAddingLoading={addBuyInMutation.isPending}
+                      isRemovingLoading={removeBuyInMutation.isPending}
                     />
                   );
                 })}
@@ -370,6 +366,7 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
                         totalBuyIns={totalBuyIns}
                         value={final ?? null}
                         onChange={(value) => updateFinal(player.id, value)}
+                        isLoading={updateFinalMutation.isPending}
                       />
                     );
                   })}
@@ -418,6 +415,7 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
 
 interface PlayerInputProps {
   onSubmit: (name: string) => void;
+  isLoading?: boolean;
 }
 
 const playerNameSchema = z.object({
@@ -429,7 +427,7 @@ const playerNameSchema = z.object({
 
 type PlayerNameFormValues = z.infer<typeof playerNameSchema>;
 
-function PlayerInput({ onSubmit }: PlayerInputProps) {
+function PlayerInput({ onSubmit, isLoading = false }: PlayerInputProps) {
   const { data: lastPlayerNameData } = useLastPlayerName();
   
   const form = useForm<PlayerNameFormValues>({
@@ -478,7 +476,10 @@ function PlayerInput({ onSubmit }: PlayerInputProps) {
             </FormItem>
           )}
         />
-        <Button type="submit">Add</Button>
+        <Button type="submit" disabled={isLoading}>
+          {isLoading && <Spinner className="mr-2" />}
+          Add
+        </Button>
       </form>
     </Form>
   );
@@ -487,10 +488,10 @@ function PlayerInput({ onSubmit }: PlayerInputProps) {
 interface PlayerItemProps {
   player: { id: string; name: string };
   onUpdateName: (name: string) => void;
-  onRemove: () => void;
+  isLoading?: boolean;
 }
 
-function PlayerItem({ player, onUpdateName, onRemove }: PlayerItemProps) {
+function PlayerItem({ player, onUpdateName, isLoading = false }: PlayerItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(player.name);
 
@@ -519,27 +520,26 @@ function PlayerItem({ player, onUpdateName, onRemove }: PlayerItemProps) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="flex-1"
+            disabled={isLoading}
             onKeyDown={(e) => {
               if (e.key === "Enter") handleSave();
               if (e.key === "Escape") handleCancel();
             }}
             autoFocus
           />
-          <Button variant="outline" size="sm" onClick={handleSave}>
+          <Button variant="outline" size="sm" onClick={handleSave} disabled={isLoading}>
+            {isLoading && <Spinner className="mr-2" />}
             Save
           </Button>
-          <Button variant="ghost" size="sm" onClick={handleCancel}>
+          <Button variant="ghost" size="sm" onClick={handleCancel} disabled={isLoading}>
             Cancel
           </Button>
         </>
       ) : (
         <>
           <span className="flex-1 font-medium">{player.name}</span>
-          <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+          <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} disabled={isLoading}>
             Edit
-          </Button>
-          <Button variant="ghost" size="sm" onClick={onRemove}>
-            Remove
           </Button>
         </>
       )}
@@ -553,6 +553,8 @@ interface BuyInSectionProps {
   total: number;
   onAdd: (amount: number) => void;
   onRemove: (index: number) => void;
+  isAddingLoading?: boolean;
+  isRemovingLoading?: boolean;
 }
 
 function BuyInSection({
@@ -561,6 +563,8 @@ function BuyInSection({
   total,
   onAdd,
   onRemove,
+  isAddingLoading = false,
+  isRemovingLoading = false,
 }: BuyInSectionProps) {
   const [customAmount, setCustomAmount] = useState("");
 
@@ -572,6 +576,8 @@ function BuyInSection({
     }
   };
 
+  const isLoading = isAddingLoading || isRemovingLoading;
+
   return (
     <div className="rounded-md border bg-card p-4 space-y-3">
       <div className="flex items-center justify-between">
@@ -582,13 +588,16 @@ function BuyInSection({
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" onClick={() => onAdd(20)}>
+        <Button variant="outline" onClick={() => onAdd(20)} disabled={isLoading}>
+          {isAddingLoading && <Spinner className="mr-2" />}
           +฿20
         </Button>
-        <Button variant="outline" onClick={() => onAdd(50)}>
+        <Button variant="outline" onClick={() => onAdd(50)} disabled={isLoading}>
+          {isAddingLoading && <Spinner className="mr-2" />}
           +฿50
         </Button>
-        <Button variant="outline" onClick={() => onAdd(100)}>
+        <Button variant="outline" onClick={() => onAdd(100)} disabled={isLoading}>
+          {isAddingLoading && <Spinner className="mr-2" />}
           +฿100
         </Button>
         <div className="flex gap-2 flex-1 min-w-[200px]">
@@ -597,12 +606,14 @@ function BuyInSection({
             placeholder="Custom amount"
             value={customAmount}
             onChange={(e) => setCustomAmount(e.target.value)}
+            disabled={isAddingLoading}
             onKeyDown={(e) => {
-              if (e.key === "Enter") handleCustomAdd();
+              if (e.key === "Enter" && !isAddingLoading) handleCustomAdd();
             }}
             className="flex-1"
           />
-          <Button variant="outline" onClick={handleCustomAdd}>
+          <Button variant="outline" onClick={handleCustomAdd} disabled={isLoading}>
+            {isAddingLoading && <Spinner className="mr-2" />}
             Add
           </Button>
         </div>
@@ -622,7 +633,9 @@ function BuyInSection({
                 variant="ghost"
                 size="sm"
                 onClick={() => onRemove(index)}
+                disabled={isRemovingLoading}
               >
+                {isRemovingLoading && <Spinner className="mr-2" />}
                 Remove
               </Button>
             </div>
@@ -638,6 +651,7 @@ interface FinalInputProps {
   totalBuyIns: number;
   value: number | null;
   onChange: (value: number | null) => void;
+  isLoading?: boolean;
 }
 
 function FinalInput({
@@ -645,6 +659,7 @@ function FinalInput({
   totalBuyIns,
   value,
   onChange,
+  isLoading = false,
 }: FinalInputProps) {
   const [inputValue, setInputValue] = useState(
     value !== null ? value.toString() : ""
@@ -664,8 +679,9 @@ function FinalInput({
       <div className="mb-2">
         <div className="flex items-center justify-between mb-1">
           <span className="font-semibold">{playerName}</span>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-muted-foreground flex items-center gap-2">
             Buy-ins: {formatCurrency(totalBuyIns)}
+            {isLoading && <Spinner className="size-3" />}
           </span>
         </div>
       </div>
@@ -675,6 +691,7 @@ function FinalInput({
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         onBlur={handleBlur}
+        disabled={isLoading}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             e.currentTarget.blur();

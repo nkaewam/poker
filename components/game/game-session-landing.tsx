@@ -21,6 +21,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useCreateGame, useJoinGame, useLastPlayerName } from "@/lib/api/hooks";
+import { Spinner } from "@/components/ui/spinner";
 
 type Flow = "initial" | "create" | "join";
 
@@ -200,6 +201,7 @@ export function GameSessionLanding() {
                 size="lg"
                 disabled={createGameMutation.isPending}
               >
+                {createGameMutation.isPending && <Spinner className="mr-2" />}
                 {createGameMutation.isPending ? "Creating..." : "Create Game"}
               </Button>
 
@@ -292,6 +294,7 @@ export function GameSessionLanding() {
                 size="lg"
                 disabled={joinGameMutation.isPending}
               >
+                {joinGameMutation.isPending && <Spinner className="mr-2" />}
                 {joinGameMutation.isPending ? "Joining..." : "Join Game"}
               </Button>
               

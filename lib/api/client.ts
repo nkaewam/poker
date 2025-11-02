@@ -123,19 +123,6 @@ export async function updatePlayer(
 }
 
 /**
- * Remove a player from a game
- */
-export async function removePlayer(
-  gameCode: string,
-  playerId: string
-): Promise<void> {
-  const validatedCode = gameCodeSchema.parse(gameCode);
-  await fetchAPI(`/games/${validatedCode}/players/${playerId}`, {
-    method: "DELETE",
-  });
-}
-
-/**
  * Add a buy-in for a player
  */
 export async function addBuyIn(

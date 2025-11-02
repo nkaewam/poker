@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useQueryState } from "nuqs";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -17,15 +17,21 @@ import {
 } from "@/components/ui/form";
 import { ResultsSettlement } from "@/components/game/results-settlement";
 import {
-  loadGameState,
-  saveGameState,
-  clearGameState,
   exportGameState,
-  importGameState,
   type GameState,
 } from "@/lib/storage";
 import { formatCurrency, parseCurrency } from "@/lib/format";
 import { type PlayerResult } from "@/lib/settlement";
+import {
+  useGame,
+  useAddPlayer,
+  useUpdatePlayer,
+  useRemovePlayer,
+  useAddBuyIn,
+  useRemoveBuyIn,
+  useUpdateFinal,
+} from "@/lib/api/hooks";
+import { transformGameToState } from "@/lib/api/transform";
 
 type Tab = "players" | "buyins" | "finals" | "results";
 
@@ -44,120 +50,108 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
     serialize: (value) => value,
   });
 
-  const [state, setState] = useState<GameState>({
-    players: [],
-    buyIns: {},
-    finals: {},
-  });
+  // Fetch game data with polling
+  const { data: game, isLoading, error } = useGame(gameCode);
 
-  // Load from localStorage on mount
-  useEffect(() => {
-    const loaded = loadGameState();
-    if (loaded) {
-      setState(loaded);
+  // Transform API response to component state format
+  const state = useMemo<GameState>(() => {
+    if (!game) {
+      return { players: [], buyIns: {}, finals: {} };
     }
-  }, []);
+    return transformGameToState(game);
+  }, [game]);
 
-  // Auto-add player name when joining with a name (mock behavior)
+  // Mutations
+  const addPlayerMutation = useAddPlayer(gameCode || "");
+  const updatePlayerMutation = useUpdatePlayer(gameCode || "");
+  const removePlayerMutation = useRemovePlayer(gameCode || "");
+  const addBuyInMutation = useAddBuyIn(gameCode || "");
+  const removeBuyInMutation = useRemoveBuyIn(gameCode || "");
+  const updateFinalMutation = useUpdateFinal(gameCode || "");
+
+  // Auto-add player when joining with a name (only if game exists and no players)
   useEffect(() => {
-    if (playerName && state.players.length === 0) {
-      // Only auto-add if no players exist yet (to avoid duplicates on re-renders)
-      const id = crypto.randomUUID();
-      setState((prev) => ({
-        ...prev,
-        players: [...prev.players, { id, name: playerName }],
-        buyIns: { ...prev.buyIns, [id]: [] },
-        finals: { ...prev.finals, [id]: null },
-      }));
+    if (playerName && game && state.players.length === 0) {
+      addPlayerMutation.mutate({ name: playerName });
     }
-  }, [playerName, state.players.length]);
+  }, [playerName, game, state.players.length, addPlayerMutation]);
 
-  // Save to localStorage whenever state changes
-  useEffect(() => {
-    if (state.players.length > 0 || Object.keys(state.buyIns).length > 0) {
-      saveGameState(state);
-    }
-  }, [state]);
+  const addPlayer = useCallback(
+    (name: string) => {
+      if (!name.trim() || !gameCode) return;
+      addPlayerMutation.mutate({ name: name.trim() });
+    },
+    [gameCode, addPlayerMutation]
+  );
 
-  const addPlayer = useCallback((name: string) => {
-    if (!name.trim()) return;
+  const removePlayer = useCallback(
+    (id: string) => {
+      if (!gameCode) return;
+      removePlayerMutation.mutate(id);
+    },
+    [gameCode, removePlayerMutation]
+  );
 
-    const id = crypto.randomUUID();
-    setState((prev) => ({
-      ...prev,
-      players: [...prev.players, { id, name: name.trim() }],
-      buyIns: { ...prev.buyIns, [id]: [] },
-      finals: { ...prev.finals, [id]: null },
-    }));
-  }, []);
+  const updatePlayerName = useCallback(
+    (id: string, name: string) => {
+      if (!gameCode) return;
+      updatePlayerMutation.mutate({ playerId: id, name: name.trim() });
+    },
+    [gameCode, updatePlayerMutation]
+  );
 
-  const removePlayer = useCallback((id: string) => {
-    setState((prev) => {
-      const newBuyIns = { ...prev.buyIns };
-      const newFinals = { ...prev.finals };
-      delete newBuyIns[id];
-      delete newFinals[id];
+  const addBuyIn = useCallback(
+    (playerId: string, amount: number) => {
+      if (amount <= 0 || !gameCode) return;
+      addBuyInMutation.mutate({ playerId, amount });
+    },
+    [gameCode, addBuyInMutation]
+  );
 
-      return {
-        players: prev.players.filter((p) => p.id !== id),
-        buyIns: newBuyIns,
-        finals: newFinals,
-      };
-    });
-  }, []);
+  const removeBuyIn = useCallback(
+    (playerId: string, index: number) => {
+      if (!gameCode || !game) return;
+      // Find the buy-in ID by index (sort by creation date to match order)
+      const playerBuyIns = game.buyIns
+        .filter((bi) => bi.playerId === playerId)
+        .sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+      if (playerBuyIns[index]) {
+        removeBuyInMutation.mutate({
+          playerId,
+          buyInId: playerBuyIns[index].id,
+        });
+      }
+    },
+    [gameCode, game, removeBuyInMutation]
+  );
 
-  const updatePlayerName = useCallback((id: string, name: string) => {
-    setState((prev) => ({
-      ...prev,
-      players: prev.players.map((p) =>
-        p.id === id ? { ...p, name: name.trim() } : p
-      ),
-    }));
-  }, []);
-
-  const addBuyIn = useCallback((playerId: string, amount: number) => {
-    if (amount <= 0) return;
-
-    setState((prev) => ({
-      ...prev,
-      buyIns: {
-        ...prev.buyIns,
-        [playerId]: [...(prev.buyIns[playerId] || []), amount],
-      },
-    }));
-  }, []);
-
-  const removeBuyIn = useCallback((playerId: string, index: number) => {
-    setState((prev) => ({
-      ...prev,
-      buyIns: {
-        ...prev.buyIns,
-        [playerId]: prev.buyIns[playerId]?.filter((_, i) => i !== index) || [],
-      },
-    }));
-  }, []);
-
-  const updateFinal = useCallback((playerId: string, value: number | null) => {
-    setState((prev) => ({
-      ...prev,
-      finals: {
-        ...prev.finals,
-        [playerId]: value,
-      },
-    }));
-  }, []);
+  const updateFinal = useCallback(
+    (playerId: string, value: number | null) => {
+      if (!gameCode) return;
+      updateFinalMutation.mutate({
+        playerId,
+        amount: value ?? 0,
+      });
+    },
+    [gameCode, updateFinalMutation]
+  );
 
   const handleReset = useCallback(() => {
-    if (confirm("Are you sure you want to reset the game? This will clear all data.")) {
-      clearGameState();
-      setState({
-        players: [],
-        buyIns: {},
-        finals: {},
-      });
-      setTab("players");
+    if (
+      confirm(
+        "Are you sure you want to reset the game? This will clear all data."
+      )
+    ) {
+      // Reset is not supported via API - would need to delete all players/buy-ins/finals
+      // For now, just show a message
+      alert(
+        "Reset functionality is not available. Please manually remove all players."
+      );
     }
-  }, [setTab]);
+  }, []);
 
   const handleExport = useCallback(() => {
     const json = exportGameState(state);
@@ -173,27 +167,7 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
   }, [state]);
 
   const handleImport = useCallback(() => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "application/json";
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const text = event.target?.result as string;
-        const imported = importGameState(text);
-        if (imported) {
-          setState(imported);
-          alert("Game imported successfully!");
-        } else {
-          alert("Failed to import game. Invalid file format.");
-        }
-      };
-      reader.readAsText(file);
-    };
-    input.click();
+    alert("Import functionality is not available with backend integration.");
   }, []);
 
   // Calculate results
@@ -238,6 +212,30 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
     { id: "finals", label: "Finals" },
     { id: "results", label: "Results" },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background p-4 pb-8">
+        <div className="mx-auto max-w-2xl">
+          <p className="text-center text-muted-foreground">Loading game...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !gameCode) {
+    return (
+      <div className="min-h-screen bg-background p-4 pb-8">
+        <div className="mx-auto max-w-2xl">
+          <p className="text-center text-red-600">
+            {error instanceof Error
+              ? error.message
+              : "Failed to load game. Please check the game code."}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-4 pb-8">

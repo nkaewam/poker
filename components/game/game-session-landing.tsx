@@ -8,6 +8,11 @@ import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
+import {
   Form,
   FormControl,
   FormField,
@@ -124,17 +129,23 @@ export function GameSessionLanding() {
                   <FormItem>
                     <FormLabel>Game Code</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Game Code (e.g., ABC12)"
-                        className="text-center text-2xl font-mono tracking-wider"
-                        autoFocus
+                      <InputOTP
                         maxLength={5}
-                        {...field}
-                        onChange={(e) => {
-                          const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
-                          field.onChange(value.slice(0, 5));
+                        value={field.value}
+                        onChange={(value) => {
+                          // Filter to only allow alphanumeric and convert to uppercase
+                          const filtered = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+                          field.onChange(filtered);
                         }}
-                      />
+                      >
+                        <InputOTPGroup>
+                          <InputOTPSlot index={0} />
+                          <InputOTPSlot index={1} />
+                          <InputOTPSlot index={2} />
+                          <InputOTPSlot index={3} />
+                          <InputOTPSlot index={4} />
+                        </InputOTPGroup>
+                      </InputOTP>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

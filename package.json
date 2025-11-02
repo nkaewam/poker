@@ -22,6 +22,7 @@
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.44.7",
     "elysia": "^1.4.13",
+    "input-otp": "^1.4.2",
     "lucide-react": "^0.552.0",
     "next": "16.0.1",
     "nuqs": "^2.7.2",

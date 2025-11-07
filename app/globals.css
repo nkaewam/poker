@@ -44,38 +44,48 @@
 }
 
 :root {
-  --radius: 0rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --radius: 0.5rem;
+  /* Warm cream background - like aged paper/playing cards */
+  --background: oklch(0.99 0.01 85);
+  --foreground: oklch(0.15 0.02 15);
+  /* White card background */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.15 0.02 15);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.15 0.02 15);
+  /* Rich gold/amber - like classic poker chips */
+  --primary: oklch(0.6 0.15 75);
+  --primary-foreground: oklch(0.15 0.02 15);
+  /* Deep blue/navy - like poker chips and classic casino feel */
+  --secondary: oklch(0.45 0.12 240);
+  --secondary-foreground: oklch(0.99 0 0);
+  --muted: oklch(0.96 0.01 85);
+  /* Darker muted text for better visibility */
+  --muted-foreground: oklch(0.4 0.02 15);
+  /* Warm brown/tan - like leather and wood poker tables */
+  --accent: oklch(0.7 0.06 45);
+  --accent-foreground: oklch(0.15 0.02 15);
+  /* Red for destructive actions */
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* Much darker borders for visibility */
+  --border: oklch(0.7 0.02 15);
+  /* More visible input background */
+  --input: oklch(0.98 0.005 85);
+  --ring: oklch(0.6 0.15 75);
+  --chart-1: oklch(0.6 0.15 75);
+  --chart-2: oklch(0.45 0.12 240);
+  --chart-3: oklch(0.7 0.06 45);
+  --chart-4: oklch(0.65 0.1 30);
+  --chart-5: oklch(0.55 0.15 350);
+  --sidebar: oklch(0.97 0.01 15);
+  --sidebar-foreground: oklch(0.15 0.02 15);
+  --sidebar-primary: oklch(0.6 0.15 75);
+  --sidebar-primary-foreground: oklch(0.15 0.02 15);
+  --sidebar-accent: oklch(0.94 0.02 85);
+  --sidebar-accent-foreground: oklch(0.15 0.02 15);
+  /* Match main border for consistency */
+  --sidebar-border: oklch(0.7 0.02 15);
+  --sidebar-ring: oklch(0.6 0.15 75);
 }
 
 .dark {

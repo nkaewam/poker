@@ -3,11 +3,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryState } from "nuqs";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
 import { QRCodeSVG } from "qrcode.react";
+import { Copy, Check } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -18,13 +18,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from "@/components/ui/form";
 import { Spinner } from "@/components/ui/spinner";
 import { ResultsSettlement } from "@/components/game/results-settlement";
 import { type GameState } from "@/lib/storage";
@@ -37,7 +30,6 @@ import {
   useAddBuyIn,
   useRemoveBuyIn,
   useUpdateFinal,
-  useLastPlayerName,
 } from "@/lib/api/hooks";
 import { transformGameToState } from "@/lib/api/transform";
 
@@ -60,6 +52,7 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
   });
   const [isQrCodeOpen, setIsQrCodeOpen] = useState(false);
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   // Construct join URL for QR code
   const joinUrl = useMemo(() => {
@@ -90,6 +83,17 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
     router.push("/");
   }, [router]);
 
+  const handleCopyGameCode = useCallback(() => {
+    if (gameCode) {
+      navigator.clipboard.writeText(gameCode);
+      setIsCopied(true);
+      toast.success("Game code copied to clipboard");
+      setTimeout(() => {
+        setIsCopied(false);
+      }, 2000);
+    }
+  }, [gameCode]);
+
   // Auto-add player when joining with a name (only if game exists and no players)
   useEffect(() => {
     if (playerName && game && state.players.length === 0) {
@@ -97,13 +101,12 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
     }
   }, [playerName, game, state.players.length, addPlayerMutation]);
 
-  const addPlayer = useCallback(
-    (name: string) => {
-      if (!name.trim() || !gameCode) return;
-      addPlayerMutation.mutate({ name: name.trim() });
-    },
-    [gameCode, addPlayerMutation]
-  );
+  // Reset copied state when modal closes
+  useEffect(() => {
+    if (!isQrCodeOpen) {
+      setIsCopied(false);
+    }
+  }, [isQrCodeOpen]);
 
   const updatePlayerName = useCallback(
     (id: string, name: string) => {
@@ -274,9 +277,24 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
                     />
                   </div>
                 )}
-                <div className="text-center space-y-1">
+                <div className="text-center space-y-2 w-full">
                   <p className="text-sm text-muted-foreground">Game Code</p>
-                  <code className="text-2xl font-mono font-bold">{gameCode}</code>
+                  <div className="flex items-center justify-center gap-2">
+                    <code className="text-2xl font-mono font-bold">{gameCode}</code>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyGameCode}
+                      className="h-9 w-9 p-0"
+                      aria-label="Copy game code"
+                    >
+                      {isCopied ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </DialogContent>
@@ -340,18 +358,10 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
         {tab === "players" && (
           <div className="space-y-4">
             <div>
-              <h2 className="text-lg font-semibold mb-3">Add Player</h2>
-              <PlayerInput
-                onSubmit={addPlayer}
-                isLoading={addPlayerMutation.isPending}
-              />
-            </div>
-            <Separator />
-            <div>
               <h2 className="text-lg font-semibold mb-3">Players ({state.players.length})</h2>
               {state.players.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  No players yet. Add your first player above.
+                  No players yet.
                 </p>
               ) : (
                 <div className="space-y-2">
@@ -473,78 +483,6 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
 
 // Sub-components
 
-interface PlayerInputProps {
-  onSubmit: (name: string) => void;
-  isLoading?: boolean;
-}
-
-const playerNameSchema = z.object({
-  name: z
-    .string()
-    .min(1, "Name is required")
-    .max(50, "Name must be less than 50 characters"),
-});
-
-type PlayerNameFormValues = z.infer<typeof playerNameSchema>;
-
-function PlayerInput({ onSubmit, isLoading = false }: PlayerInputProps) {
-  const { data: lastPlayerNameData } = useLastPlayerName();
-  
-  const form = useForm<PlayerNameFormValues>({
-    resolver: zodResolver(playerNameSchema),
-    defaultValues: {
-      name: "",
-    },
-  });
-
-  // Prefill name when last player name loads
-  useEffect(() => {
-    if (lastPlayerNameData?.name && !form.getValues("name")) {
-      form.setValue("name", lastPlayerNameData.name);
-    }
-  }, [lastPlayerNameData, form]);
-
-  const handleSubmit = (data: PlayerNameFormValues) => {
-    onSubmit(data.name.trim());
-    form.reset();
-    // Reset to last player name after submission
-    if (lastPlayerNameData?.name) {
-      form.setValue("name", lastPlayerNameData.name);
-    }
-  };
-
-  return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(handleSubmit)}
-        className="flex gap-2"
-      >
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem className="flex-1">
-              <FormControl>
-                <Input
-                  placeholder="Player name"
-                  className="flex-1"
-                  autoFocus
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" disabled={isLoading}>
-          {isLoading && <Spinner className="mr-2" />}
-          Add
-        </Button>
-      </form>
-    </Form>
-  );
-}
-
 interface PlayerItemProps {
   player: { id: string; name: string };
   onUpdateName: (name: string) => void;
@@ -647,35 +585,41 @@ function BuyInSection({
         </span>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <Button variant="outline" onClick={() => onAdd(20)} disabled={isLoading}>
-          {isAddingLoading && <Spinner className="mr-2" />}
-          +฿20
-        </Button>
-        <Button variant="outline" onClick={() => onAdd(50)} disabled={isLoading}>
-          {isAddingLoading && <Spinner className="mr-2" />}
-          +฿50
-        </Button>
-        <Button variant="outline" onClick={() => onAdd(100)} disabled={isLoading}>
-          {isAddingLoading && <Spinner className="mr-2" />}
-          +฿100
-        </Button>
-        <div className="flex gap-2 flex-1 min-w-[200px]">
-          <Input
-            type="text"
-            placeholder="Custom amount"
-            value={customAmount}
-            onChange={(e) => setCustomAmount(e.target.value)}
-            disabled={isAddingLoading}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !isAddingLoading) handleCustomAdd();
-            }}
-            className="flex-1"
-          />
-          <Button variant="outline" onClick={handleCustomAdd} disabled={isLoading}>
-            {isAddingLoading && <Spinner className="mr-2" />}
-            Add
-          </Button>
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <div className="w-full sm:w-auto">
+          <ButtonGroup className="w-full sm:w-auto">
+            <Button variant="outline" onClick={() => onAdd(100)} disabled={isLoading}>
+              {isAddingLoading && <Spinner className="mr-2" />}
+              +฿100
+            </Button>
+            <Button variant="outline" onClick={() => onAdd(200)} disabled={isLoading}>
+              {isAddingLoading && <Spinner className="mr-2" />}
+              +฿200
+            </Button>
+            <Button variant="outline" onClick={() => onAdd(300)} disabled={isLoading}>
+              {isAddingLoading && <Spinner className="mr-2" />}
+              +฿300
+            </Button>
+          </ButtonGroup>
+        </div>
+        <div className="w-full sm:flex-1 sm:min-w-[200px]">
+          <ButtonGroup className="w-full">
+            <Input
+              type="text"
+              placeholder="Custom amount"
+              value={customAmount}
+              onChange={(e) => setCustomAmount(e.target.value)}
+              disabled={isAddingLoading}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !isAddingLoading) handleCustomAdd();
+              }}
+              className="flex-1"
+            />
+            <Button variant="outline" onClick={handleCustomAdd} disabled={isLoading}>
+              {isAddingLoading && <Spinner className="mr-2" />}
+              Add
+            </Button>
+          </ButtonGroup>
         </div>
       </div>
 

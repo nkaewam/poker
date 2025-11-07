@@ -37,7 +37,7 @@ export function useGame(gameCode: string | undefined) {
     queryKey: gameKeys.detail(gameCode!),
     queryFn: () => getGame(gameCode!),
     enabled: !!gameCode,
-    refetchInterval: 5000, // Poll every 5 seconds
+    refetchInterval: 2000, // Poll every 2 seconds
   });
 }
 

@@ -22,7 +22,7 @@ services:
   migrate:
     build:
       context: .
-      dockerfile: Dockerfile.migrate
+      dockerfile: Dockerfile
     container_name: poker-migrate
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/poker
@@ -30,6 +30,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    command: bun run db:migrate
     restart: "no"
 
   app:

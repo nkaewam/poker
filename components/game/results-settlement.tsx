@@ -4,6 +4,7 @@ import { calculateSettlement, type PlayerResult } from "@/lib/settlement";
 import { formatCurrency } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { PlayerIcon } from "@/components/game/player-icon";
 
 interface ResultsSettlementProps {
   results: PlayerResult[];
@@ -15,7 +16,7 @@ export function ResultsSettlement({
   playerNames,
 }: ResultsSettlementProps) {
   const settlement = calculateSettlement(results);
-  
+
   const totalBuyIns = results.reduce(
     (sum, r) => sum + (r.net < 0 ? Math.abs(r.net) : 0),
     0
@@ -24,20 +25,24 @@ export function ResultsSettlement({
     (sum, r) => sum + (r.net > 0 ? r.net : 0),
     0
   );
-  
+
   const handleCopyTransfer = (from: string, to: string, amount: number) => {
-    const text = `${playerNames[from]} → ${playerNames[to]}: ${formatCurrency(amount)}`;
+    const text = `${playerNames[from]} → ${playerNames[to]}: ${formatCurrency(
+      amount
+    )}`;
     navigator.clipboard.writeText(text);
   };
-  
+
   const handleCopyAll = () => {
     const lines = settlement.map(
       (t) =>
-        `${playerNames[t.fromId]} → ${playerNames[t.toId]}: ${formatCurrency(t.amount)}`
+        `${playerNames[t.fromId]} → ${playerNames[t.toId]}: ${formatCurrency(
+          t.amount
+        )}`
     );
     navigator.clipboard.writeText(lines.join("\n"));
   };
-  
+
   return (
     <div className="space-y-4">
       <div>
@@ -50,7 +55,12 @@ export function ResultsSettlement({
                 key={result.playerId}
                 className="flex items-center justify-between p-3 rounded-md border bg-card"
               >
-                <span className="font-medium">{playerNames[result.playerId]}</span>
+                <div className="flex items-center gap-2">
+                  <PlayerIcon playerId={result.playerId} size={32} />
+                  <span className="font-medium">
+                    {playerNames[result.playerId]}
+                  </span>
+                </div>
                 <span
                   className={`font-semibold ${
                     isPositive
@@ -66,9 +76,9 @@ export function ResultsSettlement({
           })}
         </div>
       </div>
-      
+
       <Separator />
-      
+
       <div className="text-sm text-muted-foreground space-y-1">
         <div className="flex justify-between">
           <span>Total Buy-ins:</span>
@@ -79,23 +89,19 @@ export function ResultsSettlement({
           <span className="font-medium">{formatCurrency(totalWinnings)}</span>
         </div>
       </div>
-      
+
       <Separator />
-      
+
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold">Settlement</h2>
           {settlement.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCopyAll}
-            >
+            <Button variant="outline" size="sm" onClick={handleCopyAll}>
               Copy All
             </Button>
           )}
         </div>
-        
+
         {settlement.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">
             No transfers needed - all players are settled.
@@ -107,13 +113,25 @@ export function ResultsSettlement({
                 key={`${transfer.fromId}-${transfer.toId}-${idx}`}
                 className="flex items-center justify-between p-3 rounded-md border bg-card"
               >
-                <div className="flex-1">
-                  <span className="font-medium">{playerNames[transfer.fromId]}</span>
+                <div className="flex-1 flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <PlayerIcon playerId={transfer.fromId} size={24} />
+                    <span className="font-medium">
+                      {playerNames[transfer.fromId]}
+                    </span>
+                  </div>
                   <span className="mx-2 text-muted-foreground">→</span>
-                  <span className="font-medium">{playerNames[transfer.toId]}</span>
+                  <div className="flex items-center gap-1.5">
+                    <PlayerIcon playerId={transfer.toId} size={24} />
+                    <span className="font-medium">
+                      {playerNames[transfer.toId]}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold">{formatCurrency(transfer.amount)}</span>
+                  <span className="font-semibold">
+                    {formatCurrency(transfer.amount)}
+                  </span>
                   <Button
                     variant="ghost"
                     size="icon-sm"
@@ -150,4 +168,3 @@ export function ResultsSettlement({
     </div>
   );
 }
-

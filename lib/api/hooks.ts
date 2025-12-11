@@ -11,6 +11,7 @@ import {
   removeBuyIn,
   updateFinal,
   getLastPlayerName,
+  getSession,
 } from "@/lib/api/client";
 import type {
   CreateGameRequest,
@@ -168,3 +169,13 @@ export function useLastPlayerName() {
   });
 }
 
+/**
+ * Get the current session
+ */
+export function useSession() {
+  return useQuery({
+    queryKey: ["session"],
+    queryFn: () => getSession(),
+    staleTime: Infinity, // Session doesn't change during the app lifecycle
+  });
+}

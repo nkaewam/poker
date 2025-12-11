@@ -20,15 +20,21 @@ export function transformGameToState(game: GameResponse): GameState {
   }
 
   // Process finals
-  const finalMap = new Map(game.finals.map((f) => [f.playerId, parseFloat(f.amount)]));
+  const finalMap = new Map(
+    game.finals.map((f) => [f.playerId, parseFloat(f.amount)])
+  );
   for (const player of game.players) {
     finalsMap[player.id] = finalMap.get(player.id) ?? null;
   }
 
   return {
-    players: game.players.map((p) => ({ id: p.id, name: p.name })),
+    players: game.players.map((p) => ({
+      id: p.id,
+      name: p.name,
+      sessionId: p.sessionId,
+      createdAt: p.createdAt,
+    })),
     buyIns: buyInsMap,
     finals: finalsMap,
   };
 }
-

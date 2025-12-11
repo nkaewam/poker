@@ -9,6 +9,7 @@ import {
   playerResponseSchema,
   buyInResponseSchema,
   finalResponseSchema,
+  sessionResponseSchema,
   gameCodeSchema,
   type CreateGameRequest,
   type JoinGameRequest,
@@ -20,6 +21,7 @@ import {
   type PlayerResponse,
   type BuyInResponse,
   type FinalResponse,
+  type SessionResponse,
 } from "@/lib/api/schemas";
 
 const API_BASE = "/api";
@@ -38,7 +40,9 @@ async function fetchAPI<T>(
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: "Unknown error" }));
+    const error = await response
+      .json()
+      .catch(() => ({ error: "Unknown error" }));
     throw new Error(error.error || `HTTP ${response.status}`);
   }
 
@@ -77,10 +81,10 @@ export async function joinGame(
   const validated = joinGameRequestSchema.parse(request);
   // First ensure session exists
   await fetchAPI("/auth/session", { method: "POST" });
-  
+
   // Verify game exists first
   await getGame(validated.gameCode);
-  
+
   // Then add player and return updated game
   await addPlayer(validated.gameCode, { name: validated.playerName });
   return getGame(validated.gameCode);
@@ -95,10 +99,13 @@ export async function addPlayer(
 ): Promise<PlayerResponse> {
   const validatedCode = gameCodeSchema.parse(gameCode);
   const validated = addPlayerRequestSchema.parse(request);
-  const data = await fetchAPI<PlayerResponse>(`/games/${validatedCode}/players`, {
-    method: "POST",
-    body: JSON.stringify(validated),
-  });
+  const data = await fetchAPI<PlayerResponse>(
+    `/games/${validatedCode}/players`,
+    {
+      method: "POST",
+      body: JSON.stringify(validated),
+    }
+  );
   return playerResponseSchema.parse(data);
 }
 
@@ -183,7 +190,16 @@ export async function updateFinal(
  * Get the last player name used in the current session
  */
 export async function getLastPlayerName(): Promise<{ name: string | null }> {
-  const data = await fetchAPI<{ name: string | null }>("/session/last-player-name");
+  const data = await fetchAPI<{ name: string | null }>(
+    "/session/last-player-name"
+  );
   return data;
 }
 
+/**
+ * Get the current session
+ */
+export async function getSession(): Promise<SessionResponse> {
+  const data = await fetchAPI<SessionResponse>("/auth/session");
+  return sessionResponseSchema.parse(data);
+}

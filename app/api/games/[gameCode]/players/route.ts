@@ -3,7 +3,11 @@ import { db } from "@/lib/db";
 import { games, players } from "@/lib/db/schema";
 import { eq, sql, and } from "drizzle-orm";
 import { getOrCreateSession } from "@/lib/auth";
-import { gameCodeSchema, addPlayerRequestSchema, playerResponseSchema } from "@/lib/api/schemas";
+import {
+  gameCodeSchema,
+  addPlayerRequestSchema,
+  playerResponseSchema,
+} from "@/lib/api/schemas";
 
 export async function POST(
   request: Request,
@@ -24,13 +28,12 @@ export async function POST(
     });
 
     if (!game) {
-      return NextResponse.json(
-        { error: "Game not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Game not found" }, { status: 404 });
     }
 
     // Check if player already exists for this session and game (rejoin scenario)
+    // Only reuse existing player if the name matches (true rejoin)
+    // If name is different, create a new player (adding a different player)
     const existingPlayer = await db.query.players.findFirst({
       where: and(
         eq(players.gameId, game.id),
@@ -38,27 +41,8 @@ export async function POST(
       ),
     });
 
-    // If player exists, return it (reuse existing player on rejoin)
-    if (existingPlayer) {
-      // Update name if it has changed
-      if (existingPlayer.name !== validated.name) {
-        const [updatedPlayer] = await db
-          .update(players)
-          .set({ name: validated.name })
-          .where(eq(players.id, existingPlayer.id))
-          .returning();
-
-        return NextResponse.json(
-          playerResponseSchema.parse({
-            id: updatedPlayer.id,
-            gameId: updatedPlayer.gameId,
-            sessionId: updatedPlayer.sessionId,
-            name: updatedPlayer.name,
-            createdAt: updatedPlayer.createdAt.toISOString(),
-          })
-        );
-      }
-
+    // If player exists with the same name, return it (reuse existing player on rejoin)
+    if (existingPlayer && existingPlayer.name === validated.name) {
       return NextResponse.json(
         playerResponseSchema.parse({
           id: existingPlayer.id,
@@ -69,6 +53,10 @@ export async function POST(
         })
       );
     }
+
+    // If existing player has different name, create a new player instead of updating
+    // This allows adding multiple players from the same session
+    // (The existing player can update their name via the update endpoint if needed)
 
     // Create new player if none exists
     const [player] = await db
@@ -103,4 +91,3 @@ export async function POST(
     );
   }
 }
-

@@ -13,7 +13,7 @@ export default function Home() {
         </div>
 
         <div className="space-y-4">
-          <Button asChild className="w-full" size="lg">
+          <Button asChild className="w-full text-white" size="lg">
             <Link href="/create">Create Game</Link>
           </Button>
           <Button asChild variant="outline" className="w-full" size="lg">

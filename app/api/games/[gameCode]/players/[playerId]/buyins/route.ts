@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { games, players, buyIns } from "@/lib/db/schema";
 import { eq, sql, and } from "drizzle-orm";
-import { gameCodeSchema, addBuyInRequestSchema, buyInResponseSchema } from "@/lib/api/schemas";
+import {
+  gameCodeSchema,
+  addBuyInRequestSchema,
+  buyInResponseSchema,
+} from "@/lib/api/schemas";
 import { z } from "zod";
 
 const playerIdSchema = z.string().uuid();
@@ -24,10 +28,7 @@ export async function POST(
     });
 
     if (!game) {
-      return NextResponse.json(
-        { error: "Game not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Game not found" }, { status: 404 });
     }
 
     // Verify player exists and belongs to game
@@ -39,10 +40,7 @@ export async function POST(
     });
 
     if (!player) {
-      return NextResponse.json(
-        { error: "Player not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Player not found" }, { status: 404 });
     }
 
     // Create buy-in
@@ -53,6 +51,9 @@ export async function POST(
         amount: validated.amount.toString(),
       })
       .returning();
+
+    // TODO: Remove this artificial delay after testing
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     return NextResponse.json(
       buyInResponseSchema.parse({
@@ -76,4 +77,3 @@ export async function POST(
     );
   }
 }
-

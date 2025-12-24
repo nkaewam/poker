@@ -12,7 +12,9 @@ interface PlayersTabProps {
   onAddPlayer: (name: string) => void;
   isUpdatingName: boolean;
   isAddingBuyIn: boolean;
+  loadingBuyIn: { playerId: string; amount: number } | null;
   isRemovingBuyIn: boolean;
+  removingBuyIn: { playerId: string; index: number } | null;
   isAddingPlayer: boolean;
 }
 
@@ -24,7 +26,9 @@ export function PlayersTab({
   onAddPlayer,
   isUpdatingName,
   isAddingBuyIn,
+  loadingBuyIn,
   isRemovingBuyIn,
+  removingBuyIn,
   isAddingPlayer,
 }: PlayersTabProps) {
   return (
@@ -55,8 +59,8 @@ export function PlayersTab({
                 onAddBuyIn={(amount) => onAddBuyIn(player.id, amount)}
                 onRemoveBuyIn={(index) => onRemoveBuyIn(player.id, index)}
                 isUpdatingName={isUpdatingName}
-                isAddingBuyIn={isAddingBuyIn}
-                isRemovingBuyIn={isRemovingBuyIn}
+                loadingBuyIn={loadingBuyIn}
+                removingBuyIn={removingBuyIn}
               />
             );
           })}

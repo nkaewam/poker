@@ -57,7 +57,9 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
     isUpdatingName,
     isAddingPlayer,
     isAddingBuyIn,
+    loadingBuyIn,
     isRemovingBuyIn,
+    removingBuyIn,
     isUpdatingFinal,
   } = useGameActions({
     gameCode,
@@ -146,7 +148,9 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
               onAddPlayer={addPlayer}
               isUpdatingName={isUpdatingName}
               isAddingBuyIn={isAddingBuyIn}
+              loadingBuyIn={loadingBuyIn}
               isRemovingBuyIn={isRemovingBuyIn}
+              removingBuyIn={removingBuyIn}
               isAddingPlayer={isAddingPlayer}
             />
           </TabsContent>

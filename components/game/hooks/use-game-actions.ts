@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   useAddPlayer,
   useUpdatePlayer,
@@ -52,10 +52,30 @@ export function useGameActions({
     [gameCode, addPlayerMutation]
   );
 
+  // Track which specific buy-in is being added (playerId + amount)
+  const [loadingBuyIn, setLoadingBuyIn] = useState<{
+    playerId: string;
+    amount: number;
+  } | null>(null);
+
+  // Track which specific buy-in is being removed (playerId + index)
+  const [removingBuyIn, setRemovingBuyIn] = useState<{
+    playerId: string;
+    index: number;
+  } | null>(null);
+
   const addBuyIn = useCallback(
     (playerId: string, amount: number) => {
       if (amount <= 0 || !gameCode) return;
-      addBuyInMutation.mutate({ playerId, amount });
+      setLoadingBuyIn({ playerId, amount });
+      addBuyInMutation.mutate(
+        { playerId, amount },
+        {
+          onSettled: () => {
+            setLoadingBuyIn(null);
+          },
+        }
+      );
     },
     [gameCode, addBuyInMutation]
   );
@@ -71,10 +91,18 @@ export function useGameActions({
             new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         );
       if (playerBuyIns[index]) {
-        removeBuyInMutation.mutate({
-          playerId,
-          buyInId: playerBuyIns[index].id,
-        });
+        setRemovingBuyIn({ playerId, index });
+        removeBuyInMutation.mutate(
+          {
+            playerId,
+            buyInId: playerBuyIns[index].id,
+          },
+          {
+            onSettled: () => {
+              setRemovingBuyIn(null);
+            },
+          }
+        );
       }
     },
     [gameCode, game, removeBuyInMutation]
@@ -100,7 +128,9 @@ export function useGameActions({
     isUpdatingName: updatePlayerMutation.isPending,
     isAddingPlayer: addPlayerMutation.isPending,
     isAddingBuyIn: addBuyInMutation.isPending,
+    loadingBuyIn,
     isRemovingBuyIn: removeBuyInMutation.isPending,
+    removingBuyIn,
     isUpdatingFinal: updateFinalMutation.isPending,
   };
 }

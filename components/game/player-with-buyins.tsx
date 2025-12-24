@@ -9,10 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency, parseCurrency } from "@/lib/format";
 import { PlayerIcon } from "@/components/game/player-icon";
 import { isGuestPlayer } from "@/lib/utils/player-utils";
+import { useSession } from "@/lib/api/hooks";
 import type { GameState } from "@/lib/storage";
 
 interface PlayerWithBuyInsProps {
-  player: { id: string; name: string };
+  player: { id: string; name: string; sessionId: string | null };
   buyIns: number[];
   total: number;
   gameState: GameState;
@@ -20,8 +21,8 @@ interface PlayerWithBuyInsProps {
   onAddBuyIn: (amount: number) => void;
   onRemoveBuyIn: (index: number) => void;
   isUpdatingName?: boolean;
-  isAddingBuyIn?: boolean;
-  isRemovingBuyIn?: boolean;
+  loadingBuyIn: { playerId: string; amount: number } | null;
+  removingBuyIn: { playerId: string; index: number } | null;
 }
 
 export function PlayerWithBuyIns({
@@ -33,13 +34,17 @@ export function PlayerWithBuyIns({
   onAddBuyIn,
   onRemoveBuyIn,
   isUpdatingName = false,
-  isAddingBuyIn = false,
-  isRemovingBuyIn = false,
+  loadingBuyIn,
+  removingBuyIn,
 }: PlayerWithBuyInsProps) {
+  const { data: session } = useSession();
   const isGuest = isGuestPlayer(player.id, gameState);
   const [isEditingName, setIsEditingName] = useState(false);
   const [name, setName] = useState(player.name);
   const [customAmount, setCustomAmount] = useState("");
+
+  // Check if the current user can edit this player's name (only if it's their own player)
+  const canEditName = session?.id && player.sessionId === session.id;
 
   useEffect(() => {
     setName(player.name);
@@ -65,7 +70,27 @@ export function PlayerWithBuyIns({
     }
   };
 
-  const isLoading = isAddingBuyIn || isRemovingBuyIn;
+  // Check if this specific player's buy-in is loading
+  const isThisPlayerLoading = loadingBuyIn?.playerId === player.id;
+  const isThisPlayerRemoving = removingBuyIn?.playerId === player.id;
+  const isLoading = isThisPlayerLoading || isThisPlayerRemoving;
+
+  // Helper to check if a specific amount button is loading
+  const isAmountLoading = (amount: number) =>
+    isThisPlayerLoading && loadingBuyIn?.amount === amount;
+
+  // Check if custom amount button should show spinner
+  // (if loading amount is not one of the preset amounts)
+  const isCustomAmountLoading =
+    isThisPlayerLoading &&
+    loadingBuyIn &&
+    loadingBuyIn.amount !== 100 &&
+    loadingBuyIn.amount !== 200 &&
+    loadingBuyIn.amount !== 300;
+
+  // Helper to check if a specific remove button is loading
+  const isRemoveButtonLoading = (index: number) =>
+    isThisPlayerRemoving && removingBuyIn?.index === index;
 
   return (
     <div className="rounded-md border bg-card p-4 space-y-4">
@@ -119,14 +144,16 @@ export function PlayerWithBuyIns({
             <span className="text-sm text-muted-foreground">
               Total: {formatCurrency(total)}
             </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsEditingName(true)}
-              disabled={isUpdatingName}
-            >
-              Edit
-            </Button>
+            {canEditName && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsEditingName(true)}
+                disabled={isUpdatingName}
+              >
+                Edit
+              </Button>
+            )}
           </>
         )}
       </div>
@@ -141,7 +168,7 @@ export function PlayerWithBuyIns({
                 onClick={() => onAddBuyIn(100)}
                 disabled={isLoading}
               >
-                {isAddingBuyIn && <Spinner className="mr-2" />}
+                {isAmountLoading(100) && <Spinner className="mr-2" />}
                 +฿100
               </Button>
               <Button
@@ -149,7 +176,7 @@ export function PlayerWithBuyIns({
                 onClick={() => onAddBuyIn(200)}
                 disabled={isLoading}
               >
-                {isAddingBuyIn && <Spinner className="mr-2" />}
+                {isAmountLoading(200) && <Spinner className="mr-2" />}
                 +฿200
               </Button>
               <Button
@@ -157,7 +184,7 @@ export function PlayerWithBuyIns({
                 onClick={() => onAddBuyIn(300)}
                 disabled={isLoading}
               >
-                {isAddingBuyIn && <Spinner className="mr-2" />}
+                {isAmountLoading(300) && <Spinner className="mr-2" />}
                 +฿300
               </Button>
             </ButtonGroup>
@@ -169,9 +196,10 @@ export function PlayerWithBuyIns({
                 placeholder="Custom amount"
                 value={customAmount}
                 onChange={(e) => setCustomAmount(e.target.value)}
-                disabled={isAddingBuyIn}
+                disabled={isThisPlayerLoading}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !isAddingBuyIn) handleCustomAdd();
+                  if (e.key === "Enter" && !isThisPlayerLoading)
+                    handleCustomAdd();
                 }}
                 className="flex-1"
               />
@@ -180,7 +208,7 @@ export function PlayerWithBuyIns({
                 onClick={handleCustomAdd}
                 disabled={isLoading}
               >
-                {isAddingBuyIn && <Spinner className="mr-2" />}
+                {isCustomAmountLoading && <Spinner className="mr-2" />}
                 Add
               </Button>
             </ButtonGroup>
@@ -201,9 +229,9 @@ export function PlayerWithBuyIns({
                   variant="ghost"
                   size="sm"
                   onClick={() => onRemoveBuyIn(index)}
-                  disabled={isRemovingBuyIn}
+                  disabled={isThisPlayerRemoving}
                 >
-                  {isRemovingBuyIn && <Spinner className="mr-2" />}
+                  {isRemoveButtonLoading(index) && <Spinner className="mr-2" />}
                   Remove
                 </Button>
               </div>

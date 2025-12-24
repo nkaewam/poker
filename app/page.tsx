@@ -10,8 +10,8 @@ export default function Home() {
           <Image
             src="/poker-accounting.webp"
             alt="Poker Accounting"
-            width={150}
-            height={150}
+            width={200}
+            height={200}
             className="mx-auto"
           />
           <h1 className="text-3xl font-bold">Poker Accounting</h1>

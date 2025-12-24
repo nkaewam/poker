@@ -114,9 +114,13 @@ function JoinGameForm() {
                       value={field.value}
                       onChange={(value) => {
                         // Filter to only allow alphanumeric and convert to uppercase
-                        const filtered = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+                        const filtered = value
+                          .toUpperCase()
+                          .replace(/[^A-Z0-9]/g, "");
                         field.onChange(filtered);
                       }}
+                      pattern="[A-Z0-9]*"
+                      inputMode="text"
                     >
                       <InputOTPGroup>
                         <InputOTPSlot index={0} />
@@ -131,7 +135,7 @@ function JoinGameForm() {
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="playerName"
@@ -159,13 +163,8 @@ function JoinGameForm() {
               {joinGameMutation.isPending && <Spinner className="mr-2" />}
               {joinGameMutation.isPending ? "Joining..." : "Join Game"}
             </Button>
-            
-            <Button
-              type="button"
-              asChild
-              variant="ghost"
-              className="w-full"
-            >
+
+            <Button type="button" asChild variant="ghost" className="w-full">
               <Link href="/">Back</Link>
             </Button>
           </form>
@@ -177,18 +176,19 @@ function JoinGameForm() {
 
 export default function JoinGamePage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="w-full max-w-md space-y-6">
-          <div className="text-center space-y-2">
-            <h1 className="text-2xl font-bold">Join Game</h1>
-            <p className="text-muted-foreground">Loading...</p>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <div className="w-full max-w-md space-y-6">
+            <div className="text-center space-y-2">
+              <h1 className="text-2xl font-bold">Join Game</h1>
+              <p className="text-muted-foreground">Loading...</p>
+            </div>
           </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <JoinGameForm />
     </Suspense>
   );
 }
-

@@ -8,6 +8,8 @@ import {
   buyInResponseSchema,
 } from "@/lib/api/schemas";
 import { z } from "zod";
+import { getOrCreateSession } from "@/lib/auth";
+import { createGameLog } from "@/lib/db/logging";
 
 const playerIdSchema = z.string().uuid();
 
@@ -43,6 +45,17 @@ export async function POST(
       return NextResponse.json({ error: "Player not found" }, { status: 404 });
     }
 
+    // Get session for logging
+    const session = await getOrCreateSession();
+
+    // Find the actor player (the player who belongs to the current session)
+    const actorPlayer = await db.query.players.findFirst({
+      where: and(
+        eq(players.gameId, game.id),
+        eq(players.sessionId, session.id)
+      ),
+    });
+
     // Create buy-in
     const [buyIn] = await db
       .insert(buyIns)
@@ -52,8 +65,18 @@ export async function POST(
       })
       .returning();
 
-    // TODO: Remove this artificial delay after testing
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Log buy-in addition (fire-and-forget)
+    createGameLog({
+      gameId: game.id,
+      action: "buyin_added",
+      playerId: validatedPlayerId,
+      actorSessionId: session.id,
+      actorPlayerId: actorPlayer?.id,
+      metadata: {
+        buyInId: buyIn.id,
+        amount: validated.amount,
+      },
+    });
 
     return NextResponse.json(
       buyInResponseSchema.parse({

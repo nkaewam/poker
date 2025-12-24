@@ -21,10 +21,6 @@ export function ResultsSettlement({
     (sum, r) => sum + (r.net < 0 ? Math.abs(r.net) : 0),
     0
   );
-  const totalWinnings = results.reduce(
-    (sum, r) => sum + (r.net > 0 ? r.net : 0),
-    0
-  );
 
   const handleCopyTransfer = (from: string, to: string, amount: number) => {
     const text = `${playerNames[from]} → ${playerNames[to]}: ${formatCurrency(
@@ -45,49 +41,9 @@ export function ResultsSettlement({
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold mb-3">Results</h2>
-        <div className="space-y-2">
-          {results.map((result) => {
-            const isPositive = result.net > 0;
-            return (
-              <div
-                key={result.playerId}
-                className="flex items-center justify-between p-3 rounded-md border bg-card"
-              >
-                <div className="flex items-center gap-2">
-                  <PlayerIcon playerId={result.playerId} size={32} />
-                  <span className="font-medium">
-                    {playerNames[result.playerId]}
-                  </span>
-                </div>
-                <span
-                  className={`font-semibold ${
-                    isPositive
-                      ? "text-green-600 dark:text-green-500"
-                      : "text-red-600 dark:text-red-500"
-                  }`}
-                >
-                  {isPositive ? "+" : ""}
-                  {formatCurrency(result.net)}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <Separator />
-
-      <div className="text-sm text-muted-foreground space-y-1">
-        <div className="flex justify-between">
-          <span>Total Buy-ins:</span>
-          <span className="font-medium">{formatCurrency(totalBuyIns)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Total Winnings:</span>
-          <span className="font-medium">{formatCurrency(totalWinnings)}</span>
-        </div>
+      <div className="flex justify-between text-lg font-bold">
+        <span>Total Buy-ins:</span>
+        <span className="font-medium">{formatCurrency(totalBuyIns)}</span>
       </div>
 
       <Separator />

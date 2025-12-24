@@ -4,6 +4,8 @@ import { games, players, buyIns } from "@/lib/db/schema";
 import { eq, sql, and } from "drizzle-orm";
 import { gameCodeSchema } from "@/lib/api/schemas";
 import { z } from "zod";
+import { getOrCreateSession } from "@/lib/auth";
+import { createGameLog } from "@/lib/db/logging";
 
 const playerIdSchema = z.string().uuid();
 const buyInIdSchema = z.string().uuid();
@@ -45,6 +47,32 @@ export async function DELETE(
       );
     }
 
+    // Get buy-in before deletion for logging
+    const buyInToDelete = await db.query.buyIns.findFirst({
+      where: and(
+        eq(buyIns.id, validatedBuyInId),
+        eq(buyIns.playerId, validatedPlayerId)
+      ),
+    });
+
+    if (!buyInToDelete) {
+      return NextResponse.json(
+        { error: "Buy-in not found" },
+        { status: 404 }
+      );
+    }
+
+    // Get session for logging
+    const session = await getOrCreateSession();
+
+    // Find the actor player (the player who belongs to the current session)
+    const actorPlayer = await db.query.players.findFirst({
+      where: and(
+        eq(players.gameId, game.id),
+        eq(players.sessionId, session.id)
+      ),
+    });
+
     // Delete buy-in
     const [deletedBuyIn] = await db
       .delete(buyIns)
@@ -56,12 +84,18 @@ export async function DELETE(
       )
       .returning();
 
-    if (!deletedBuyIn) {
-      return NextResponse.json(
-        { error: "Buy-in not found" },
-        { status: 404 }
-      );
-    }
+    // Log buy-in removal (fire-and-forget)
+    createGameLog({
+      gameId: game.id,
+      action: "buyin_removed",
+      playerId: validatedPlayerId,
+      actorSessionId: session.id,
+      actorPlayerId: actorPlayer?.id,
+      metadata: {
+        buyInId: validatedBuyInId,
+        amount: parseFloat(deletedBuyIn.amount),
+      },
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

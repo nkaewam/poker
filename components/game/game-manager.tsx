@@ -8,6 +8,7 @@ import { GameHeader } from "@/components/game/game-header";
 import { GameDialogs } from "@/components/game/game-dialogs";
 import { PlayersTab } from "@/components/game/players-tab";
 import { FinalsTab } from "@/components/game/finals-tab";
+import { GameLogTab } from "@/components/game/game-log-tab";
 import {
   useGameState,
   useGameActions,
@@ -163,13 +164,16 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
               discrepancy={discrepancy}
               allFinalsEntered={allFinalsEntered}
               onUpdateFinal={updateFinal}
-              onViewResults={() => setTab("results")}
               isUpdatingFinal={isUpdatingFinal}
             />
           </TabsContent>
 
-          <TabsContent value="results" className="mt-6">
+          <TabsContent value="settlement" className="mt-6">
             <ResultsSettlement results={results} playerNames={playerNames} />
+          </TabsContent>
+
+          <TabsContent value="log" className="mt-6">
+            <GameLogTab gameCode={gameCode} />
           </TabsContent>
         </Tabs>
       </div>

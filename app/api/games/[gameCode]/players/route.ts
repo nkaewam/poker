@@ -8,6 +8,7 @@ import {
   addPlayerRequestSchema,
   playerResponseSchema,
 } from "@/lib/api/schemas";
+import { createGameLog } from "@/lib/db/logging";
 
 export async function POST(
   request: Request,
@@ -67,6 +68,18 @@ export async function POST(
         name: validated.name,
       })
       .returning();
+
+    // Log player addition (fire-and-forget)
+    createGameLog({
+      gameId: game.id,
+      action: "player_added",
+      playerId: player.id,
+      actorSessionId: session.id,
+      actorPlayerId: player.id,
+      metadata: {
+        playerName: validated.name,
+      },
+    });
 
     return NextResponse.json(
       playerResponseSchema.parse({

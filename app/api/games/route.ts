@@ -4,6 +4,7 @@ import { games, players } from "@/lib/db/schema";
 import { getOrCreateSession } from "@/lib/auth";
 import { createGameRequestSchema, gameResponseSchema } from "@/lib/api/schemas";
 import { generateUniqueGameCode } from "@/lib/utils/game-code";
+import { createGameLog } from "@/lib/db/logging";
 
 export async function POST(request: Request) {
   try {
@@ -32,6 +33,30 @@ export async function POST(request: Request) {
         name: validated.playerName,
       })
       .returning();
+
+    // Log game creation (fire-and-forget)
+    createGameLog({
+      gameId: game.id,
+      action: "game_created",
+      actorSessionId: session.id,
+      actorPlayerId: player.id,
+      metadata: {
+        gameCode,
+        initialPlayerName: validated.playerName,
+      },
+    });
+
+    // Log initial player addition (fire-and-forget)
+    createGameLog({
+      gameId: game.id,
+      action: "player_added",
+      playerId: player.id,
+      actorSessionId: session.id,
+      actorPlayerId: player.id,
+      metadata: {
+        playerName: validated.playerName,
+      },
+    });
 
     // Fetch full game data with relations
     const gameData = await db.query.games.findFirst({

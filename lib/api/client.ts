@@ -10,6 +10,7 @@ import {
   buyInResponseSchema,
   finalResponseSchema,
   sessionResponseSchema,
+  gameLogsResponseSchema,
   gameCodeSchema,
   type CreateGameRequest,
   type JoinGameRequest,
@@ -22,6 +23,7 @@ import {
   type BuyInResponse,
   type FinalResponse,
   type SessionResponse,
+  type GameLogsResponse,
 } from "@/lib/api/schemas";
 
 const API_BASE = "/api";
@@ -202,4 +204,13 @@ export async function getLastPlayerName(): Promise<{ name: string | null }> {
 export async function getSession(): Promise<SessionResponse> {
   const data = await fetchAPI<SessionResponse>("/auth/session");
   return sessionResponseSchema.parse(data);
+}
+
+/**
+ * Get game logs
+ */
+export async function getGameLogs(gameCode: string): Promise<GameLogsResponse> {
+  const validatedCode = gameCodeSchema.parse(gameCode);
+  const data = await fetchAPI<GameLogsResponse>(`/games/${validatedCode}/logs`);
+  return gameLogsResponseSchema.parse(data);
 }

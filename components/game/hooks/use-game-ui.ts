@@ -1,13 +1,13 @@
 import { useState, useMemo } from "react";
 import { useQueryState } from "nuqs";
 
-type Tab = "players" | "finals" | "results";
+type Tab = "players" | "finals" | "settlement" | "log";
 
 export function useGameUI() {
   const [tab, setTab] = useQueryState("tab", {
     defaultValue: "players",
     parse: (value) => {
-      const valid: Tab[] = ["players", "finals", "results"];
+      const valid: Tab[] = ["players", "finals", "settlement", "log"];
       return valid.includes(value as Tab) ? (value as Tab) : "players";
     },
     serialize: (value) => value,
@@ -20,7 +20,8 @@ export function useGameUI() {
     () => [
       { id: "players", label: "Players & Buy-ins" },
       { id: "finals", label: "Finals" },
-      { id: "results", label: "Results" },
+      { id: "settlement", label: "Settlement" },
+      { id: "log", label: "Log" },
     ],
     []
   );

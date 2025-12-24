@@ -12,6 +12,7 @@ import {
   updateFinal,
   getLastPlayerName,
   getSession,
+  getGameLogs,
 } from "@/lib/api/client";
 import type {
   CreateGameRequest,
@@ -177,5 +178,17 @@ export function useSession() {
     queryKey: ["session"],
     queryFn: () => getSession(),
     staleTime: Infinity, // Session doesn't change during the app lifecycle
+  });
+}
+
+/**
+ * Get game logs
+ */
+export function useGameLogs(gameCode: string | undefined) {
+  return useQuery({
+    queryKey: [...gameKeys.detail(gameCode!), "logs"],
+    queryFn: () => getGameLogs(gameCode!),
+    enabled: !!gameCode,
+    refetchInterval: 2000, // Poll every 2 seconds to keep logs up to date
   });
 }

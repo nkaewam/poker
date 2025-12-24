@@ -85,6 +85,22 @@ export const sessionResponseSchema = z.object({
   expiresAt: z.string().datetime(),
 });
 
+export const gameLogResponseSchema = z.object({
+  id: z.string().uuid(),
+  gameId: z.number(),
+  action: z.string(),
+  playerId: z.string().uuid().nullable(),
+  playerName: z.string().nullable(),
+  playerSessionId: z.string().uuid().nullable(),
+  actorSessionId: z.string().uuid().nullable(),
+  actorPlayerId: z.string().uuid().nullable(),
+  actorPlayerName: z.string().nullable(),
+  metadata: z.unknown().nullable(),
+  createdAt: z.string().datetime(),
+});
+
+export const gameLogsResponseSchema = z.array(gameLogResponseSchema);
+
 // Type exports
 export type CreateGameRequest = z.infer<typeof createGameRequestSchema>;
 export type JoinGameRequest = z.infer<typeof joinGameRequestSchema>;
@@ -98,4 +114,6 @@ export type BuyInResponse = z.infer<typeof buyInResponseSchema>;
 export type FinalResponse = z.infer<typeof finalResponseSchema>;
 export type GameResponse = z.infer<typeof gameResponseSchema>;
 export type SessionResponse = z.infer<typeof sessionResponseSchema>;
+export type GameLogResponse = z.infer<typeof gameLogResponseSchema>;
+export type GameLogsResponse = z.infer<typeof gameLogsResponseSchema>;
 

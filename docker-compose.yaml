@@ -19,33 +19,33 @@ services:
       timeout: 5s
       retries: 5
 
-  migrate:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: poker-migrate
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/poker
-      NODE_ENV: production
-    depends_on:
-      postgres:
-        condition: service_healthy
-    command: bun run db:migrate
-    restart: "no"
+  # migrate:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: poker-migrate
+  #   environment:
+  #     DATABASE_URL: postgresql://postgres:postgres@postgres:5432/poker
+  #     NODE_ENV: production
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   command: bun run db:migrate
+  #   restart: "no"
 
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: poker-app
-    ports:
-      - "3000:3000"
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/poker
-      NODE_ENV: production
-    depends_on:
-      postgres:
-        condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
-    restart: unless-stopped
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: poker-app
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     DATABASE_URL: postgresql://postgres:postgres@postgres:5432/poker
+  #     NODE_ENV: production
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     migrate:
+  #       condition: service_completed_successfully
+  #   restart: unless-stopped

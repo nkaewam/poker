@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { type GameState } from "@/lib/storage";
 import { formatCurrency } from "@/lib/format";
@@ -13,7 +12,6 @@ interface FinalsTabProps {
   discrepancy: number;
   allFinalsEntered: boolean;
   onUpdateFinal: (playerId: string, value: number | null) => void;
-  onViewResults: () => void;
   isUpdatingFinal: boolean;
 }
 
@@ -24,7 +22,6 @@ export function FinalsTab({
   discrepancy,
   allFinalsEntered,
   onUpdateFinal,
-  onViewResults,
   isUpdatingFinal,
 }: FinalsTabProps) {
   return (
@@ -76,11 +73,6 @@ export function FinalsTab({
               </div>
             )}
           </div>
-          {allFinalsEntered && discrepancy <= 0.01 && (
-            <Button className="w-full" onClick={onViewResults}>
-              View Results & Settlement
-            </Button>
-          )}
         </>
       )}
     </div>

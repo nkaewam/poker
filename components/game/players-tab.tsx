@@ -38,6 +38,7 @@ export function PlayersTab({
           Players & Buy-ins ({state.players.length})
         </h2>
       </div>
+      <AddPlayerForm onAdd={onAddPlayer} isLoading={isAddingPlayer} />
       {state.players.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-8">
           No players yet. Add a player to get started.
@@ -66,7 +67,6 @@ export function PlayersTab({
           })}
         </div>
       )}
-      <AddPlayerForm onAdd={onAddPlayer} isLoading={isAddingPlayer} />
     </div>
   );
 }

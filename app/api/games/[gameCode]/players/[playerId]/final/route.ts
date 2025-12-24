@@ -4,6 +4,8 @@ import { games, players, finals } from "@/lib/db/schema";
 import { eq, sql, and } from "drizzle-orm";
 import { gameCodeSchema, updateFinalRequestSchema, finalResponseSchema } from "@/lib/api/schemas";
 import { z } from "zod";
+import { getOrCreateSession } from "@/lib/auth";
+import { createGameLog } from "@/lib/db/logging";
 
 const playerIdSchema = z.string().uuid();
 
@@ -50,6 +52,19 @@ export async function PATCH(
       where: eq(finals.playerId, validatedPlayerId),
     });
 
+    const oldAmount = existingFinal ? parseFloat(existingFinal.amount) : null;
+
+    // Get session for logging
+    const session = await getOrCreateSession();
+
+    // Find the actor player (the player who belongs to the current session)
+    const actorPlayer = await db.query.players.findFirst({
+      where: and(
+        eq(players.gameId, game.id),
+        eq(players.sessionId, session.id)
+      ),
+    });
+
     let final;
     if (existingFinal) {
       [final] = await db
@@ -66,6 +81,19 @@ export async function PATCH(
         })
         .returning();
     }
+
+    // Log final update (fire-and-forget)
+    createGameLog({
+      gameId: game.id,
+      action: "final_updated",
+      playerId: validatedPlayerId,
+      actorSessionId: session.id,
+      actorPlayerId: actorPlayer?.id,
+      metadata: {
+        oldAmount,
+        newAmount: validated.amount,
+      },
+    });
 
     return NextResponse.json(
       finalResponseSchema.parse({

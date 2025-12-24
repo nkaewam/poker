@@ -25,21 +25,19 @@ export function AddPlayerForm({
   };
 
   return (
-    <div className="rounded-md border bg-card p-4">
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <Input
-          type="text"
-          placeholder="Add new player..."
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          disabled={isLoading}
-          className="flex-1"
-        />
-        <Button type="submit" disabled={isLoading || !name.trim()}>
-          {isLoading && <Spinner className="mr-2" />}
-          Add Player
-        </Button>
-      </form>
-    </div>
+    <form onSubmit={handleSubmit} className="flex gap-2">
+      <Input
+        type="text"
+        placeholder="Add new player..."
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        disabled={isLoading}
+        className="flex-1"
+      />
+      <Button type="submit" disabled={isLoading || !name.trim()}>
+        {isLoading && <Spinner className="mr-2" />}
+        Add Player
+      </Button>
+    </form>
   );
 }

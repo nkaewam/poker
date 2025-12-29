@@ -1,8 +1,9 @@
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
-import { sessions } from "@/lib/db/schema";
+import { sessions, users } from "@/lib/db/schema";
 import { eq, and, gt } from "drizzle-orm";
 import { randomBytes } from "crypto";
+import { auth } from "./better-auth";
 
 const SESSION_COOKIE_NAME = "poker_session";
 const SESSION_DURATION_DAYS = 30;
@@ -89,3 +90,47 @@ export async function requireSession() {
   return session;
 }
 
+/**
+ * Get the current authenticated user from better-auth session
+ */
+export async function getAuthenticatedUser() {
+  try {
+    const session = await auth.api.getSession({ headers: await import("next/headers").then(m => m.headers()) });
+    if (!session?.user) {
+      return null;
+    }
+    
+    // Fetch full user data including nickname
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.user.id),
+    });
+    
+    return user;
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Check if user has completed onboarding (has a nickname)
+ */
+export async function hasCompletedOnboarding(): Promise<boolean> {
+  const user = await getAuthenticatedUser();
+  return user?.nickname !== null && user?.nickname !== undefined && user.nickname.trim() !== "";
+}
+
+/**
+ * Update user's nickname
+ */
+export async function updateUserNickname(userId: string, nickname: string) {
+  const [updatedUser] = await db
+    .update(users)
+    .set({
+      nickname: nickname.trim(),
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId))
+    .returning();
+  
+  return updatedUser;
+}

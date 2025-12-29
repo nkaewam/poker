@@ -214,3 +214,11 @@ export async function getGameLogs(gameCode: string): Promise<GameLogsResponse> {
   const data = await fetchAPI<GameLogsResponse>(`/games/${validatedCode}/logs`);
   return gameLogsResponseSchema.parse(data);
 }
+
+/**
+ * Get the user's nickname (if authenticated)
+ */
+export async function getUserNickname(): Promise<{ nickname: string | null }> {
+  const data = await fetchAPI<{ nickname: string | null }>("/user/nickname");
+  return data;
+}

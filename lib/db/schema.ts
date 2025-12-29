@@ -9,6 +9,8 @@ import {
   unique,
   index,
   jsonb,
+  boolean,
+  text,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -24,16 +26,45 @@ export const games = pgTable(
   })
 );
 
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  name: varchar("name", { length: 255 }),
+  nickname: varchar("nickname", { length: 50 }),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  image: text("image"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const accounts = pgTable("accounts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  accountId: varchar("account_id", { length: 255 }).notNull(),
+  providerId: varchar("provider_id", { length: 50 }).notNull(),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const sessions = pgTable(
   "sessions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     token: varchar("token", { length: 64 }).notNull().unique(),
+    userId: uuid("user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     expiresAt: timestamp("expires_at").notNull(),
   },
   (table) => ({
     tokenIdx: index("token_idx").on(table.token),
+    userIdIdx: index("session_user_id_idx").on(table.userId),
   })
 );
 
@@ -114,12 +145,28 @@ export const gameLogs = pgTable(
 );
 
 // Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  accounts: many(accounts),
+  sessions: many(sessions),
+}));
+
+export const accountsRelations = relations(accounts, ({ one }) => ({
+  user: one(users, {
+    fields: [accounts.userId],
+    references: [users.id],
+  }),
+}));
+
 export const gamesRelations = relations(games, ({ many }) => ({
   players: many(players),
   logs: many(gameLogs),
 }));
 
-export const sessionsRelations = relations(sessions, ({ many }) => ({
+export const sessionsRelations = relations(sessions, ({ one, many }) => ({
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id],
+  }),
   players: many(players),
   actorLogs: many(gameLogs),
 }));

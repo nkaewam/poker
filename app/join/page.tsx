@@ -8,6 +8,7 @@ import Link from "next/link";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AuthButton } from "@/components/auth/auth-button";
 import {
   InputOTP,
   InputOTPGroup,
@@ -21,7 +22,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useJoinGame, useLastPlayerName } from "@/lib/api/hooks";
+import { useJoinGame, useLastPlayerName, useUserNickname } from "@/lib/api/hooks";
 import { Spinner } from "@/components/ui/spinner";
 
 const joinFormSchema = z.object({
@@ -43,6 +44,7 @@ function JoinGameForm() {
   const searchParams = useSearchParams();
   const joinGameMutation = useJoinGame();
   const { data: lastPlayerNameData } = useLastPlayerName();
+  const { data: nicknameData } = useUserNickname();
 
   const gameCodeParam = searchParams.get("game-code");
 
@@ -54,12 +56,17 @@ function JoinGameForm() {
     },
   });
 
-  // Prefill name when last player name loads
+  // Prefill name: prioritize nickname, then last player name
   useEffect(() => {
-    if (lastPlayerNameData?.name && !form.getValues("playerName")) {
+    const currentValue = form.getValues("playerName");
+    if (currentValue) return; // Don't overwrite if user has typed something
+
+    if (nicknameData?.nickname) {
+      form.setValue("playerName", nicknameData.nickname);
+    } else if (lastPlayerNameData?.name) {
       form.setValue("playerName", lastPlayerNameData.name);
     }
-  }, [lastPlayerNameData, form]);
+  }, [nicknameData, lastPlayerNameData, form]);
 
   // Prefill game code from query param
   useEffect(() => {
@@ -88,8 +95,12 @@ function JoinGameForm() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
+    <div className="min-h-screen bg-background flex flex-col">
+      <div className="flex justify-end p-4">
+        <AuthButton />
+      </div>
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold">Join Game</h1>
           <p className="text-muted-foreground">
@@ -169,6 +180,7 @@ function JoinGameForm() {
             </Button>
           </form>
         </Form>
+        </div>
       </div>
     </div>
   );

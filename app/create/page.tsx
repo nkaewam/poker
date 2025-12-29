@@ -8,6 +8,7 @@ import Link from "next/link";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AuthButton } from "@/components/auth/auth-button";
 import {
   Form,
   FormControl,
@@ -16,7 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useCreateGame, useLastPlayerName } from "@/lib/api/hooks";
+import { useCreateGame, useLastPlayerName, useUserNickname } from "@/lib/api/hooks";
 import { Spinner } from "@/components/ui/spinner";
 
 const playerNameSchema = z.object({
@@ -32,6 +33,7 @@ export default function CreateGamePage() {
   const router = useRouter();
   const createGameMutation = useCreateGame();
   const { data: lastPlayerNameData } = useLastPlayerName();
+  const { data: nicknameData } = useUserNickname();
 
   const form = useForm<PlayerNameFormValues>({
     resolver: zodResolver(playerNameSchema),
@@ -40,12 +42,17 @@ export default function CreateGamePage() {
     },
   });
 
-  // Prefill name when last player name loads
+  // Prefill name: prioritize nickname, then last player name
   useEffect(() => {
-    if (lastPlayerNameData?.name && !form.getValues("playerName")) {
+    const currentValue = form.getValues("playerName");
+    if (currentValue) return; // Don't overwrite if user has typed something
+
+    if (nicknameData?.nickname) {
+      form.setValue("playerName", nicknameData.nickname);
+    } else if (lastPlayerNameData?.name) {
       form.setValue("playerName", lastPlayerNameData.name);
     }
-  }, [lastPlayerNameData, form]);
+  }, [nicknameData, lastPlayerNameData, form]);
 
   const handleSubmit = async (data: PlayerNameFormValues) => {
     try {
@@ -60,8 +67,12 @@ export default function CreateGamePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
+    <div className="min-h-screen bg-background flex flex-col">
+      <div className="flex justify-end p-4">
+        <AuthButton />
+      </div>
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold">Create Game</h1>
           <p className="text-muted-foreground">
@@ -113,6 +124,7 @@ export default function CreateGamePage() {
             </Button>
           </form>
         </Form>
+        </div>
       </div>
     </div>
   );

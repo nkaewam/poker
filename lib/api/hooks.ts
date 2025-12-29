@@ -13,6 +13,7 @@ import {
   getLastPlayerName,
   getSession,
   getGameLogs,
+  getUserNickname,
 } from "@/lib/api/client";
 import type {
   CreateGameRequest,
@@ -190,5 +191,16 @@ export function useGameLogs(gameCode: string | undefined) {
     queryFn: () => getGameLogs(gameCode!),
     enabled: !!gameCode,
     refetchInterval: 2000, // Poll every 2 seconds to keep logs up to date
+  });
+}
+
+/**
+ * Get the user's nickname (if authenticated)
+ */
+export function useUserNickname() {
+  return useQuery({
+    queryKey: ["user", "nickname"],
+    queryFn: () => getUserNickname(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }

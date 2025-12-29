@@ -1,11 +1,16 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { AuthButton } from "@/components/auth/auth-button";
 import Image from "next/image";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
+    <div className="min-h-screen bg-background flex flex-col">
+      <div className="flex justify-end p-4">
+        <AuthButton />
+      </div>
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <Image
             src="/poker-accounting.webp"
@@ -32,6 +37,7 @@ export default function Home() {
           >
             <Link href="/join">Join Game</Link>
           </Button>
+        </div>
         </div>
       </div>
     </div>

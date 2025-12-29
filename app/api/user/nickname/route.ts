@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/better-auth";
 import { updateUserNickname } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { user } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -25,14 +25,14 @@ export async function GET() {
       return NextResponse.json({ nickname: null });
     }
 
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, session.user.id),
+    const userData = await db.query.user.findFirst({
+      where: eq(user.id, session.user.id),
       columns: {
         nickname: true,
       },
     });
 
-    return NextResponse.json({ nickname: user?.nickname || null });
+    return NextResponse.json({ nickname: userData?.nickname || null });
   } catch (error) {
     console.error("Error getting nickname:", error);
     return NextResponse.json({ nickname: null });

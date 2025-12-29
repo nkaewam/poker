@@ -1,9 +1,9 @@
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
-import { sessions, users } from "@/lib/db/schema";
+import { session, user } from "@/lib/db/schema";
 import { eq, and, gt } from "drizzle-orm";
 import { randomBytes } from "crypto";
-import { auth } from "./better-auth";
+import { auth } from "@/lib/auth/better-auth";
 
 const SESSION_COOKIE_NAME = "poker_session";
 const SESSION_DURATION_DAYS = 30;
@@ -21,34 +21,52 @@ export function generateSessionToken(): string {
 export async function getSessionFromCookie() {
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-  
+
   if (!sessionToken) {
     return null;
   }
 
-  const session = await db.query.sessions.findFirst({
+  const sessionData = await db.query.session.findFirst({
     where: and(
-      eq(sessions.token, sessionToken),
-      gt(sessions.expiresAt, new Date())
+      eq(session.token, sessionToken),
+      gt(session.expiresAt, new Date())
     ),
   });
 
-  return session;
+  return sessionData;
 }
 
 /**
  * Create a new session and set HTTP-only cookie
+ * Note: This creates an anonymous session. For authenticated sessions, use better-auth.
  */
 export async function createSession() {
   const token = generateSessionToken();
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + SESSION_DURATION_DAYS);
 
-  const [session] = await db
-    .insert(sessions)
+  // Better-auth sessions require a userId, so we create a temporary anonymous user
+  const tempUserId = `anon_${randomBytes(16).toString("hex")}`;
+  const sessionId = randomBytes(16).toString("hex");
+
+  // Create temporary anonymous user if it doesn't exist
+  await db
+    .insert(user)
     .values({
+      id: tempUserId,
+      name: "Anonymous",
+      email: `${tempUserId}@anonymous.local`,
+      emailVerified: false,
+    })
+    .onConflictDoNothing();
+
+  const [sessionData] = await db
+    .insert(session)
+    .values({
+      id: sessionId,
       token,
       expiresAt,
+      userId: tempUserId,
     })
     .returning();
 
@@ -61,7 +79,7 @@ export async function createSession() {
     path: "/",
   });
 
-  return session;
+  return sessionData;
 }
 
 /**
@@ -95,17 +113,19 @@ export async function requireSession() {
  */
 export async function getAuthenticatedUser() {
   try {
-    const session = await auth.api.getSession({ headers: await import("next/headers").then(m => m.headers()) });
+    const session = await auth.api.getSession({
+      headers: await import("next/headers").then((m) => m.headers()),
+    });
     if (!session?.user) {
       return null;
     }
-    
+
     // Fetch full user data including nickname
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, session.user.id),
+    const userData = await db.query.user.findFirst({
+      where: eq(user.id, session.user.id),
     });
-    
-    return user;
+
+    return userData;
   } catch (error) {
     return null;
   }
@@ -116,7 +136,11 @@ export async function getAuthenticatedUser() {
  */
 export async function hasCompletedOnboarding(): Promise<boolean> {
   const user = await getAuthenticatedUser();
-  return user?.nickname !== null && user?.nickname !== undefined && user.nickname.trim() !== "";
+  return (
+    user?.nickname !== null &&
+    user?.nickname !== undefined &&
+    user.nickname.trim() !== ""
+  );
 }
 
 /**
@@ -124,13 +148,13 @@ export async function hasCompletedOnboarding(): Promise<boolean> {
  */
 export async function updateUserNickname(userId: string, nickname: string) {
   const [updatedUser] = await db
-    .update(users)
+    .update(user)
     .set({
       nickname: nickname.trim(),
       updatedAt: new Date(),
     })
-    .where(eq(users.id, userId))
+    .where(eq(user.id, userId))
     .returning();
-  
+
   return updatedUser;
 }

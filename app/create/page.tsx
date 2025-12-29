@@ -17,8 +17,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useCreateGame, useLastPlayerName, useUserNickname } from "@/lib/api/hooks";
+import {
+  useCreateGame,
+  useLastPlayerName,
+  useUserNickname,
+} from "@/lib/api/hooks";
 import { Spinner } from "@/components/ui/spinner";
+import { authClient } from "@/components/auth/auth-provider";
 
 const playerNameSchema = z.object({
   playerName: z
@@ -34,6 +39,11 @@ export default function CreateGamePage() {
   const createGameMutation = useCreateGame();
   const { data: lastPlayerNameData } = useLastPlayerName();
   const { data: nicknameData } = useUserNickname();
+  const session = authClient.useSession();
+
+  const isAuthenticated = !!session.data?.user;
+  const hasNickname = !!nicknameData?.nickname;
+  const shouldSkipNicknameInput = isAuthenticated && hasNickname;
 
   const form = useForm<PlayerNameFormValues>({
     resolver: zodResolver(playerNameSchema),
@@ -54,10 +64,15 @@ export default function CreateGamePage() {
     }
   }, [nicknameData, lastPlayerNameData, form]);
 
-  const handleSubmit = async (data: PlayerNameFormValues) => {
+  const handleSubmit = async (data?: PlayerNameFormValues) => {
     try {
+      // If authenticated with nickname, use nickname; otherwise use form data
+      const playerName = shouldSkipNicknameInput
+        ? nicknameData!.nickname!
+        : data!.playerName.trim();
+
       const game = await createGameMutation.mutateAsync({
-        playerName: data.playerName.trim(),
+        playerName,
       });
       router.push(`/g/${game.gameCode}`);
     } catch (error) {
@@ -73,60 +88,88 @@ export default function CreateGamePage() {
       </div>
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold">Create Game</h1>
-          <p className="text-muted-foreground">
-            Enter your name to start
-          </p>
-        </div>
+          <div className="text-center space-y-2">
+            <h1 className="text-2xl font-bold">Create Game</h1>
+            <p className="text-muted-foreground">
+              {shouldSkipNicknameInput
+                ? "Ready to create your game"
+                : "Enter your name to start"}
+            </p>
+          </div>
 
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(handleSubmit)}
-            className="space-y-4"
-          >
-            <FormField
-              control={form.control}
-              name="playerName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Your Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Your name"
-                      className="text-center"
-                      autoFocus
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          {shouldSkipNicknameInput ? (
+            <div className="space-y-4">
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground">
+                  Playing as:{" "}
+                  <span className="font-semibold">
+                    {nicknameData?.nickname}
+                  </span>
+                </p>
+              </div>
+              <Button
+                type="button"
+                className="w-full text-white"
+                size="lg"
+                disabled={createGameMutation.isPending}
+                onClick={() => handleSubmit()}
+              >
+                {createGameMutation.isPending && <Spinner className="mr-2" />}
+                {createGameMutation.isPending ? "Creating..." : "Create Game"}
+              </Button>
 
-            <Button
-              type="submit"
-              className="w-full"
-              size="lg"
-              disabled={createGameMutation.isPending}
-            >
-              {createGameMutation.isPending && <Spinner className="mr-2" />}
-              {createGameMutation.isPending ? "Creating..." : "Create Game"}
-            </Button>
+              <Button type="button" asChild variant="ghost" className="w-full">
+                <Link href="/">Back</Link>
+              </Button>
+            </div>
+          ) : (
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(handleSubmit)}
+                className="space-y-4"
+              >
+                <FormField
+                  control={form.control}
+                  name="playerName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Your Name</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Your name"
+                          className="text-center"
+                          autoFocus
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <Button
-              type="button"
-              asChild
-              variant="ghost"
-              className="w-full"
-            >
-              <Link href="/">Back</Link>
-            </Button>
-          </form>
-        </Form>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  size="lg"
+                  disabled={createGameMutation.isPending}
+                >
+                  {createGameMutation.isPending && <Spinner className="mr-2" />}
+                  {createGameMutation.isPending ? "Creating..." : "Create Game"}
+                </Button>
+
+                <Button
+                  type="button"
+                  asChild
+                  variant="ghost"
+                  className="w-full"
+                >
+                  <Link href="/">Back</Link>
+                </Button>
+              </form>
+            </Form>
+          )}
         </div>
       </div>
     </div>
   );
 }
-

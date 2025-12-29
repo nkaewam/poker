@@ -222,3 +222,16 @@ export async function getUserNickname(): Promise<{ nickname: string | null }> {
   const data = await fetchAPI<{ nickname: string | null }>("/user/nickname");
   return data;
 }
+
+/**
+ * Update the user's nickname (if authenticated)
+ */
+export async function updateUserNickname(
+  nickname: string
+): Promise<{ success: boolean }> {
+  const data = await fetchAPI<{ success: boolean }>("/user/nickname", {
+    method: "POST",
+    body: JSON.stringify({ nickname }),
+  });
+  return data;
+}

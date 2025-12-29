@@ -50,7 +50,7 @@ export const updateFinalRequestSchema = z.object({
 export const playerResponseSchema = z.object({
   id: z.string().uuid(),
   gameId: z.number(),
-  sessionId: z.string().uuid().nullable(),
+  sessionId: z.string().nullable(),
   name: z.string(),
   createdAt: z.string().datetime(),
 });
@@ -79,7 +79,7 @@ export const gameResponseSchema = z.object({
 });
 
 export const sessionResponseSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string(),
   token: z.string(),
   createdAt: z.string().datetime(),
   expiresAt: z.string().datetime(),
@@ -91,8 +91,8 @@ export const gameLogResponseSchema = z.object({
   action: z.string(),
   playerId: z.string().uuid().nullable(),
   playerName: z.string().nullable(),
-  playerSessionId: z.string().uuid().nullable(),
-  actorSessionId: z.string().uuid().nullable(),
+  playerSessionId: z.string().nullable(),
+  actorSessionId: z.string().nullable(),
   actorPlayerId: z.string().uuid().nullable(),
   actorPlayerName: z.string().nullable(),
   metadata: z.unknown().nullable(),
@@ -116,4 +116,3 @@ export type GameResponse = z.infer<typeof gameResponseSchema>;
 export type SessionResponse = z.infer<typeof sessionResponseSchema>;
 export type GameLogResponse = z.infer<typeof gameLogResponseSchema>;
 export type GameLogsResponse = z.infer<typeof gameLogsResponseSchema>;
-

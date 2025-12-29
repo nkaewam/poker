@@ -14,6 +14,7 @@ import {
   getSession,
   getGameLogs,
   getUserNickname,
+  updateUserNickname,
 } from "@/lib/api/client";
 import type {
   CreateGameRequest,
@@ -202,5 +203,20 @@ export function useUserNickname() {
     queryKey: ["user", "nickname"],
     queryFn: () => getUserNickname(),
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+/**
+ * Update the user's nickname (if authenticated)
+ */
+export function useUpdateUserNickname() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (nickname: string) => updateUserNickname(nickname),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user", "nickname"] });
+      queryClient.refetchQueries({ queryKey: ["user", "nickname"] });
+    },
   });
 }

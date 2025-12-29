@@ -110,17 +110,16 @@ export async function POST(request: Request) {
 
     return NextResponse.json(gameResponseSchema.parse(response));
   } catch (error) {
+    console.error("Error creating game:", error);
     if (error instanceof Error && error.name === "ZodError") {
       return NextResponse.json(
         { error: "Validation error", details: error },
         { status: 400 }
       );
     }
-    console.error("Error creating game:", error);
     return NextResponse.json(
       { error: "Failed to create game" },
       { status: 500 }
     );
   }
 }
-

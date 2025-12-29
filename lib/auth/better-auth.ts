@@ -1,16 +1,12 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@/lib/db";
-import { users, accounts, sessions } from "@/lib/db/schema";
+import * as schema from "@/lib/db/schema";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
-    schema: {
-      user: users,
-      account: accounts,
-      session: sessions,
-    },
+    schema,
   }),
   emailAndPassword: {
     enabled: false,
@@ -29,3 +25,5 @@ export const auth = betterAuth({
 });
 
 export type Session = typeof auth.$Infer.Session;
+
+export default auth;

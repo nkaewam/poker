@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { useQueryClient } from "@tanstack/react-query";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ type NicknameFormValues = z.infer<typeof nicknameSchema>;
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const session = authClient.useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -67,12 +69,17 @@ export default function OnboardingPage() {
         throw new Error("Failed to save nickname");
       }
 
+      // Invalidate and refetch the nickname query to update the cache
+      await queryClient.invalidateQueries({ queryKey: ["user", "nickname"] });
+      await queryClient.refetchQueries({ queryKey: ["user", "nickname"] });
+
       router.push("/");
     } catch (error) {
       console.error("Failed to save nickname:", error);
       form.setError("nickname", {
         type: "manual",
-        message: error instanceof Error ? error.message : "Failed to save nickname",
+        message:
+          error instanceof Error ? error.message : "Failed to save nickname",
       });
     } finally {
       setIsSubmitting(false);
@@ -98,48 +105,48 @@ export default function OnboardingPage() {
       </div>
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold">Welcome!</h1>
-          <p className="text-muted-foreground">
-            Let's set up your preferred nickname for poker games
-          </p>
-        </div>
+          <div className="text-center space-y-2">
+            <h1 className="text-2xl font-bold">Welcome!</h1>
+            <p className="text-muted-foreground">
+              Let's set up your preferred nickname for poker games
+            </p>
+          </div>
 
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(handleSubmit)}
-            className="space-y-4"
-          >
-            <FormField
-              control={form.control}
-              name="nickname"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Preferred Nickname</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Your nickname"
-                      className="text-center"
-                      autoFocus
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Button
-              type="submit"
-              className="w-full"
-              size="lg"
-              disabled={isSubmitting}
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(handleSubmit)}
+              className="space-y-4"
             >
-              {isSubmitting && <Spinner className="mr-2" />}
-              {isSubmitting ? "Saving..." : "Continue"}
-            </Button>
-          </form>
-        </Form>
+              <FormField
+                control={form.control}
+                name="nickname"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preferred Nickname</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Your nickname"
+                        className="text-center"
+                        autoFocus
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button
+                type="submit"
+                className="w-full"
+                size="lg"
+                disabled={isSubmitting}
+              >
+                {isSubmitting && <Spinner className="mr-2" />}
+                {isSubmitting ? "Saving..." : "Continue"}
+              </Button>
+            </form>
+          </Form>
         </div>
       </div>
     </div>

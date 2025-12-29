@@ -37,6 +37,14 @@ export default function Home() {
           >
             <Link href="/join">Join Game</Link>
           </Button>
+          <Button
+            asChild
+            variant="ghost"
+            className="w-full max-w-sm"
+            size="lg"
+          >
+            <Link href="/leaderboard">Leaderboard</Link>
+          </Button>
         </div>
         </div>
       </div>

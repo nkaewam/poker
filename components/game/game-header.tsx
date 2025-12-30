@@ -17,7 +17,6 @@ export function GameHeader({
     <div className="mb-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-3">
-          <h1 className="text-2xl font-bold">Poker Accounting</h1>
           {gameCode && (
             <div className="space-y-2">
               <span className="text-sm text-muted-foreground">Game Code</span>

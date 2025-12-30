@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   calculateSettlement,
   type PlayerResult,
@@ -49,11 +49,43 @@ export function ResultsSettlement({
     collectorPlayerId || ""
   );
 
-  const settlement = calculateSettlement(
-    results,
+  // Auto-select first player as collector if mode is COLLECTOR but no collector is selected
+  useEffect(() => {
+    if (
+      settlementMode === "COLLECTOR" &&
+      !collectorPlayerId &&
+      players.length > 0 &&
+      !isUpdatingSettlementMode
+    ) {
+      const firstPlayerId = players[0]?.id;
+      if (firstPlayerId) {
+        onUpdateSettlementMode({
+          settlementMode: "COLLECTOR",
+          collectorPlayerId: firstPlayerId,
+        });
+        setLocalCollectorId(firstPlayerId);
+      }
+    }
+  }, [
     settlementMode,
-    collectorPlayerId
-  );
+    collectorPlayerId,
+    players,
+    isUpdatingSettlementMode,
+    onUpdateSettlementMode,
+  ]);
+
+  // Update local state when collectorPlayerId prop changes
+  useEffect(() => {
+    if (collectorPlayerId) {
+      setLocalCollectorId(collectorPlayerId);
+    }
+  }, [collectorPlayerId]);
+
+  // Calculate settlement, but handle case where collector is not yet selected
+  const settlement =
+    settlementMode === "COLLECTOR" && !collectorPlayerId
+      ? [] // Return empty array if collector not selected yet
+      : calculateSettlement(results, settlementMode, collectorPlayerId);
 
   const totalBuyIns = results.reduce(
     (sum, r) => sum + (r.net < 0 ? Math.abs(r.net) : 0),
@@ -123,36 +155,47 @@ export function ResultsSettlement({
 
       {/* Settlement Mode Selection */}
       <div className="space-y-3 p-4 rounded-md border bg-card">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="settlement-mode" className="text-sm font-semibold">
-            Settlement Mode
-          </Label>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={isUpdatingSettlementMode}
-              >
-                {settlementMode === "COLLECTOR" ? "Collector" : "Peer-to-Peer"}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => handleModeChange("PEER_TO_PEER")}
-                className={settlementMode === "PEER_TO_PEER" ? "bg-accent" : ""}
-              >
-                Peer-to-Peer
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleModeChange("COLLECTOR")}
-                className={settlementMode === "COLLECTOR" ? "bg-accent" : ""}
-                disabled={players.length === 0}
-              >
-                Collector
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="settlement-mode" className="text-sm font-semibold">
+              Settlement Mode
+            </Label>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={isUpdatingSettlementMode}
+                >
+                  {settlementMode === "COLLECTOR"
+                    ? "Collector"
+                    : "Peer-to-Peer"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => handleModeChange("PEER_TO_PEER")}
+                  className={
+                    settlementMode === "PEER_TO_PEER" ? "bg-accent" : ""
+                  }
+                >
+                  Peer-to-Peer
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleModeChange("COLLECTOR")}
+                  className={settlementMode === "COLLECTOR" ? "bg-accent" : ""}
+                  disabled={players.length === 0}
+                >
+                  Collector
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {settlementMode === "COLLECTOR"
+              ? "One person collects all buy-ins and handles all payouts after the game finishes. All players pay the collector, and the collector pays final balances."
+              : "Calculates the minimal number of transfers needed. Players transfer directly to each other based on their net results."}
+          </p>
         </div>
 
         {settlementMode === "COLLECTOR" && (

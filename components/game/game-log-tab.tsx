@@ -30,6 +30,7 @@ function getActionLabel(action: string): string {
     buyin_added: "Buy-in Added",
     buyin_removed: "Buy-in Removed",
     final_updated: "Final Updated",
+    settlement_mode_updated: "Settlement Mode Updated",
   };
   return labels[action] || action;
 }
@@ -42,7 +43,8 @@ function getActionBadgeVariant(
   if (
     action === "buyin_removed" ||
     action === "player_name_updated" ||
-    action === "final_updated"
+    action === "final_updated" ||
+    action === "settlement_mode_updated"
   )
     return "outline";
   return "outline";
@@ -140,6 +142,20 @@ function formatLogMessage(log: GameLogResponse): string {
       return `${actorName} updated final for ${targetName}: ${formatCurrency(
         finalMeta.oldAmount
       )} → ${finalMeta.newAmount ? formatCurrency(finalMeta.newAmount) : "0"}`;
+
+    case "settlement_mode_updated":
+      const settlementMeta = metadata as {
+        settlementMode?: "COLLECTOR" | "PEER_TO_PEER";
+        collectorPlayerName?: string | null;
+      };
+      const mode = settlementMeta.settlementMode || "Unknown";
+      if (mode === "COLLECTOR" && settlementMeta.collectorPlayerName) {
+        return `${actorName} changed settlement mode to Collector (${settlementMeta.collectorPlayerName})`;
+      }
+      if (mode === "PEER_TO_PEER") {
+        return `${actorName} changed settlement mode to Peer-to-Peer`;
+      }
+      return `${actorName} changed settlement mode to ${mode}`;
 
     default:
       return "Unknown action";

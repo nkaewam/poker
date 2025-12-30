@@ -8,7 +8,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AuthButton } from "@/components/auth/auth-button";
 import {
   Form,
   FormControl,
@@ -88,7 +87,7 @@ export default function OnboardingPage() {
 
   if (session.isPending) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="flex-1 flex items-center justify-center p-4">
         <Spinner />
       </div>
     );
@@ -99,11 +98,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <div className="flex justify-end p-4">
-        <AuthButton />
-      </div>
-      <div className="flex-1 flex items-center justify-center p-4">
+    <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center space-y-2">
             <h1 className="text-2xl font-bold">Welcome!</h1>
@@ -149,6 +144,5 @@ export default function OnboardingPage() {
           </Form>
         </div>
       </div>
-    </div>
   );
 }

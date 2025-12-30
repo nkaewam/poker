@@ -8,7 +8,6 @@ import Link from "next/link";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AuthButton } from "@/components/auth/auth-button";
 import {
   InputOTP,
   InputOTPGroup,
@@ -111,11 +110,7 @@ function JoinGameForm() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <div className="flex justify-end p-4">
-        <AuthButton />
-      </div>
-      <div className="flex-1 flex items-center justify-center p-4">
+    <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center space-y-2">
             <h1 className="text-2xl font-bold">Join Game</h1>
@@ -166,27 +161,17 @@ function JoinGameForm() {
               />
 
               {shouldSkipNicknameInput ? (
-                <>
-                  <FormField
-                    control={form.control}
-                    name="playerName"
-                    render={({ field }) => (
-                      <input
-                        type="hidden"
-                        {...field}
-                        value={nicknameData?.nickname || ""}
-                      />
-                    )}
-                  />
-                  <div className="text-center py-2">
-                    <p className="text-sm text-muted-foreground">
-                      Playing as:{" "}
-                      <span className="font-semibold">
-                        {nicknameData?.nickname}
-                      </span>
-                    </p>
-                  </div>
-                </>
+                <FormField
+                  control={form.control}
+                  name="playerName"
+                  render={({ field }) => (
+                    <input
+                      type="hidden"
+                      {...field}
+                      value={nicknameData?.nickname || ""}
+                    />
+                  )}
+                />
               ) : (
                 <FormField
                   control={form.control}
@@ -224,7 +209,6 @@ function JoinGameForm() {
           </Form>
         </div>
       </div>
-    </div>
   );
 }
 
@@ -232,7 +216,7 @@ export default function JoinGamePage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="flex-1 flex items-center justify-center p-4">
           <div className="w-full max-w-md space-y-6">
             <div className="text-center space-y-2">
               <h1 className="text-2xl font-bold">Join Game</h1>

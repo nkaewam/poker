@@ -21,13 +21,7 @@ export function PlayerNameField({
   nickname,
 }: PlayerNameFieldProps) {
   if (shouldSkipNicknameInput) {
-    return (
-      <div className="text-center py-4">
-        <p className="text-sm text-muted-foreground">
-          Playing as: <span className="font-semibold">{nickname}</span>
-        </p>
-      </div>
-    );
+    return null;
   }
 
   return (

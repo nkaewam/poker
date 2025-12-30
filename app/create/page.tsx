@@ -1,9 +1,14 @@
 "use client";
 
-import { AuthButton } from "@/components/auth/auth-button";
-import { CreateGameHeader } from "@/components/create/create-game-header";
 import { CreateGameForm } from "@/components/create/create-game-form";
 import { useCreateGameForm } from "@/components/create/hooks/use-create-game-form";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default function CreateGamePage() {
   const {
@@ -15,14 +20,17 @@ export default function CreateGamePage() {
   } = useCreateGameForm();
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <div className="flex justify-end p-4">
-        <AuthButton />
-      </div>
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md space-y-6">
-          <CreateGameHeader shouldSkipNicknameInput={shouldSkipNicknameInput} />
-
+    <div className="flex-1 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Create Game</CardTitle>
+          <CardDescription>
+            {shouldSkipNicknameInput
+              ? "Ready to create your game"
+              : "Enter your name to start"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <CreateGameForm
             form={form}
             onSubmit={handleSubmit}
@@ -30,8 +38,8 @@ export default function CreateGamePage() {
             shouldSkipNicknameInput={shouldSkipNicknameInput}
             nickname={nicknameData?.nickname}
           />
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

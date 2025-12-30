@@ -4,6 +4,7 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { ReactQueryProvider } from "@/lib/react-query";
 import { AuthProvider } from "@/components/auth/auth-provider";
 import { OnboardingGuard } from "@/components/auth/onboarding-guard";
+import { AuthButton } from "@/components/auth/auth-button";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -35,7 +36,14 @@ export default function RootLayout({
         <AuthProvider>
           <ReactQueryProvider>
             <OnboardingGuard>
-              <NuqsAdapter>{children}</NuqsAdapter>
+              <div className="h-screen bg-background flex flex-col">
+                <div className="flex justify-end p-4">
+                  <AuthButton />
+                </div>
+                <NuqsAdapter>
+                  <div className="flex-1 flex">{children}</div>
+                </NuqsAdapter>
+              </div>
             </OnboardingGuard>
           </ReactQueryProvider>
         </AuthProvider>

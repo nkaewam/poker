@@ -11,6 +11,7 @@ import { PlayerIcon } from "@/components/game/player-icon";
 import { isGuestPlayer } from "@/lib/utils/player-utils";
 import { useSession } from "@/lib/api/hooks";
 import type { GameState } from "@/lib/storage";
+import { TrashIcon } from "lucide-react";
 
 interface PlayerWithBuyInsProps {
   player: { id: string; name: string; sessionId: string | null };
@@ -45,8 +46,8 @@ export function PlayerWithBuyIns({
   const [name, setName] = useState(player.name);
   const [customAmount, setCustomAmount] = useState("");
 
-  // Check if the current user can edit this player's name (only if it's their own player)
-  const canEditName = session?.id && player.sessionId === session.id;
+  // Check if the current user can edit this player's name (only for guest players created by the current user, not authenticated players)
+  const canEditName = isGuest && player.sessionId === session?.id;
 
   useEffect(() => {
     setName(player.name);
@@ -138,7 +139,7 @@ export function PlayerWithBuyIns({
             {isGuest && (
               <Badge
                 variant="outline"
-                className="rounded-md text-muted-foreground bg-muted border-muted-foreground/20"
+                className="rounded-md text-muted-foreground bg-muted/20 border-muted-foreground/20"
               >
                 guest
               </Badge>
@@ -162,8 +163,11 @@ export function PlayerWithBuyIns({
       </div>
 
       {/* Buy-in Section */}
-      <div className="space-y-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+      <div className="flex sm:flex-row flex-col gap-2 items-center">
+        <p className="text-sm font-semibold text-muted-foreground text-nowrap w-full sm:w-auto">
+          Buy-ins
+        </p>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap w-full">
           <div className="w-full sm:w-auto">
             <ButtonGroup className="w-full sm:w-auto">
               {presetAmounts.map((amount) => (
@@ -172,6 +176,7 @@ export function PlayerWithBuyIns({
                   variant="outline"
                   onClick={() => onAddBuyIn(amount)}
                   disabled={isLoading}
+                  className="w-full sm:w-auto"
                 >
                   {isAmountLoading(amount) && <Spinner className="mr-2" />}+
                   {formatCurrency(amount)}
@@ -182,8 +187,8 @@ export function PlayerWithBuyIns({
           <div className="w-full sm:flex-1 sm:min-w-[200px]">
             <ButtonGroup className="w-full">
               <Input
-                type="text"
-                placeholder="Custom amount"
+                type="number"
+                placeholder="Custom amount: ฿"
                 value={customAmount}
                 onChange={(e) => setCustomAmount(e.target.value)}
                 disabled={isThisPlayerLoading}
@@ -204,31 +209,33 @@ export function PlayerWithBuyIns({
             </ButtonGroup>
           </div>
         </div>
-
-        {buyIns.length > 0 && (
-          <div className="space-y-1 pt-2 border-t">
-            {buyIns.map((amount, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between text-sm"
-              >
-                <span className="text-muted-foreground">
-                  Buy-in #{index + 1}: {formatCurrency(amount)}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onRemoveBuyIn(index)}
-                  disabled={isThisPlayerRemoving}
-                >
-                  {isRemoveButtonLoading(index) && <Spinner className="mr-2" />}
-                  Remove
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
+      {buyIns.length > 0 && (
+        <div className="space-y-1 border pl-4 pr-2 py-2 rounded-md bg-muted">
+          {buyIns.map((amount, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between text-sm"
+            >
+              <span className="text-muted-foreground">
+                Buy-in #{index + 1}: {formatCurrency(amount)}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onRemoveBuyIn(index)}
+                disabled={isThisPlayerRemoving}
+              >
+                {isRemoveButtonLoading(index) ? (
+                  <Spinner className="size-4 text-muted-foreground" />
+                ) : (
+                  <TrashIcon className="size-4 text-muted-foreground" />
+                )}
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

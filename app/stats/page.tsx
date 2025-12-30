@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { AuthButton } from "@/components/auth/auth-button";
 import { Badge } from "@/components/ui/badge";
 import { authClient } from "@/components/auth/auth-provider";
 import {
@@ -84,12 +83,11 @@ export default function StatsPage() {
   const isAuthenticated = !!session.data?.user;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <div className="flex justify-between items-center p-4">
+    <>
+      <div className="flex justify-start items-center p-4">
         <Button variant="ghost" asChild>
           <Link href="/leaderboard">← Leaderboard</Link>
         </Button>
-        <AuthButton />
       </div>
 
       <div className="flex-1 p-4 pb-8">
@@ -313,6 +311,6 @@ export default function StatsPage() {
           )}
         </div>
       </div>
-    </div>
+    </>
   );
 }

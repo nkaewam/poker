@@ -25,7 +25,7 @@ export function CreateGameForm({
 }: CreateGameFormProps) {
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <PlayerNameField
           form={form}
           shouldSkipNicknameInput={shouldSkipNicknameInput}
@@ -36,19 +36,21 @@ export function CreateGameForm({
 
         <SettlementModeField form={form} />
 
-        <Button
-          type="submit"
-          className={`w-full ${shouldSkipNicknameInput ? "text-white" : ""}`}
-          size="lg"
-          disabled={isPending}
-        >
-          {isPending && <Spinner className="mr-2" />}
-          {isPending ? "Creating..." : "Create Game"}
-        </Button>
+        <div className="space-y-2">
+          <Button
+            type="submit"
+            className={`w-full ${shouldSkipNicknameInput ? "text-white" : ""}`}
+            size="lg"
+            disabled={isPending}
+          >
+            {isPending && <Spinner className="mr-2" />}
+            {isPending ? "Creating..." : "Create Game"}
+          </Button>
 
-        <Button type="button" asChild variant="ghost" className="w-full">
-          <Link href="/">Back</Link>
-        </Button>
+          <Button type="button" asChild variant="ghost" className="w-full">
+            <Link href="/">Back</Link>
+          </Button>
+        </div>
       </form>
     </Form>
   );

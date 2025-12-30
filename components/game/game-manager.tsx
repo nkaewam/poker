@@ -86,7 +86,7 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background p-4 pb-8">
+      <div className="p-4 pb-8">
         <div className="mx-auto max-w-2xl">
           <p className="text-center text-muted-foreground">Loading game...</p>
         </div>
@@ -96,7 +96,7 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
 
   if (error || !gameCode) {
     return (
-      <div className="min-h-screen bg-background p-4 pb-8">
+      <div className="p-4 pb-8">
         <div className="mx-auto max-w-2xl">
           <p className="text-center text-red-600">
             {error instanceof Error
@@ -109,7 +109,7 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 pb-8">
+    <div className="p-4 pb-8 w-full">
       <div className="mx-auto max-w-2xl">
         <GameHeader
           gameCode={gameCode}

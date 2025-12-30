@@ -41,6 +41,9 @@ export const user = pgTable("user", {
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
   nickname: varchar("nickname", { length: 50 }),
+  iconPatternType: varchar("icon_pattern_type", { length: 20 }),
+  iconBorderShape: varchar("icon_border_shape", { length: 20 }),
+  iconSeed: text("icon_seed"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()

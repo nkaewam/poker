@@ -27,45 +27,77 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { authClient } from "@/components/auth/auth-provider";
-import { useUserNickname, useUpdateUserNickname } from "@/lib/api/hooks";
-import { LogIn, LogOut, User, Pencil } from "lucide-react";
+import {
+  useUserNickname,
+  useUpdateUserNickname,
+  useUserIconPreferences,
+  useUpdateUserIconPreferences,
+} from "@/lib/api/hooks";
+import { UserIcon } from "@/components/auth/user-icon";
+import { LogIn, LogOut, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Spinner } from "@/components/ui/spinner";
+import type { IconPattern } from "@/lib/utils/icon-pattern";
+import type { BorderShape } from "@/components/game/player-icon";
 
-const nicknameSchema = z.object({
+const editUserSchema = z.object({
   nickname: z
     .string()
     .min(1, "Nickname is required")
     .max(50, "Nickname must be less than 50 characters")
     .trim(),
+  patternType: z.enum(["grid", "dots", "lines", "shapes"]).optional(),
+  borderShape: z
+    .enum(["wavy", "zigzag", "scalloped", "spiked", "rounded", "smooth"])
+    .optional(),
+  iconSeed: z.string().optional(),
 });
 
-type NicknameFormValues = z.infer<typeof nicknameSchema>;
+type EditUserFormValues = z.infer<typeof editUserSchema>;
 
 export function AuthButton() {
   const session = authClient.useSession();
   const router = useRouter();
   const { data: nicknameData } = useUserNickname();
+  const { data: iconPreferences } = useUserIconPreferences();
   const updateNickname = useUpdateUserNickname();
-  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const updateIconPreferences = useUpdateUserIconPreferences();
+  const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
 
-  const form = useForm<NicknameFormValues>({
-    resolver: zodResolver(nicknameSchema),
+  const editUserForm = useForm<EditUserFormValues>({
+    resolver: zodResolver(editUserSchema),
     defaultValues: {
       nickname: nicknameData?.nickname || "",
+      patternType:
+        (iconPreferences?.patternType as IconPattern["type"]) || undefined,
+      borderShape: (iconPreferences?.borderShape as BorderShape) || undefined,
+      iconSeed: iconPreferences?.iconSeed || undefined,
     },
   });
 
-  // Update form when nickname data changes
+  // Update form when data changes
   useEffect(() => {
-    if (nicknameData?.nickname) {
-      form.reset({ nickname: nicknameData.nickname });
+    if (nicknameData?.nickname || iconPreferences) {
+      editUserForm.reset({
+        nickname: nicknameData?.nickname || "",
+        patternType:
+          (iconPreferences?.patternType as IconPattern["type"]) || undefined,
+        borderShape: (iconPreferences?.borderShape as BorderShape) || undefined,
+        iconSeed: iconPreferences?.iconSeed || undefined,
+      });
     }
-  }, [nicknameData?.nickname, form]);
+  }, [nicknameData?.nickname, iconPreferences, editUserForm]);
 
   const handleSignIn = async () => {
     await authClient.signIn.social({
@@ -79,16 +111,26 @@ export function AuthButton() {
     router.push("/");
   };
 
-  const handleRenameSubmit = async (data: NicknameFormValues) => {
+  const handleEditUserSubmit = async (data: EditUserFormValues) => {
     try {
-      await updateNickname.mutateAsync(data.nickname.trim());
-      setIsRenameDialogOpen(false);
+      // Update both nickname and icon preferences
+      await Promise.all([
+        updateNickname.mutateAsync(data.nickname.trim()),
+        updateIconPreferences.mutateAsync({
+          patternType: data.patternType,
+          borderShape: data.borderShape,
+          iconSeed: data.iconSeed || undefined,
+        }),
+      ]);
+      setIsEditUserDialogOpen(false);
     } catch (error) {
-      console.error("Failed to update nickname:", error);
-      form.setError("nickname", {
-        type: "manual",
-        message: error instanceof Error ? error.message : "Failed to update nickname",
-      });
+      console.error("Failed to update user:", error);
+      if (error instanceof Error && error.message.includes("nickname")) {
+        editUserForm.setError("nickname", {
+          type: "manual",
+          message: error.message,
+        });
+      }
     }
   };
 
@@ -108,27 +150,12 @@ export function AuthButton() {
       <>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="gap-2">
-              <div className="hidden sm:flex items-center gap-2">
-                {user.image && (
-                  <img
-                    src={user.image}
-                    alt={displayName}
-                    className="w-6 h-6 rounded-full"
-                  />
-                )}
-                <span className="text-sm">{displayName}</span>
-              </div>
-              <div className="sm:hidden">
-                {user.image ? (
-                  <img
-                    src={user.image}
-                    alt={displayName}
-                    className="w-6 h-6 rounded-full"
-                  />
-                ) : (
-                  <User className="size-4" />
-                )}
+            <Button variant="ghost" size="sm" className="gap-2 py-2">
+              <div className="flex items-center gap-2">
+                <UserIcon userId={user.id} size={30} />
+                <span className="text-sm leading-none hidden sm:block">
+                  {displayName}
+                </span>
               </div>
             </Button>
           </DropdownMenuTrigger>
@@ -142,12 +169,20 @@ export function AuthButton() {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => {
-                form.reset({ nickname: nicknameData?.nickname || "" });
-                setIsRenameDialogOpen(true);
+                editUserForm.reset({
+                  nickname: nicknameData?.nickname || "",
+                  patternType:
+                    (iconPreferences?.patternType as IconPattern["type"]) ||
+                    undefined,
+                  borderShape:
+                    (iconPreferences?.borderShape as BorderShape) || undefined,
+                  iconSeed: iconPreferences?.iconSeed || undefined,
+                });
+                setIsEditUserDialogOpen(true);
               }}
             >
-              <Pencil className="mr-2 size-4" />
-              Rename
+              <Settings className="mr-2 size-4" />
+              Edit User
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} variant="destructive">
@@ -157,21 +192,39 @@ export function AuthButton() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
-          <DialogContent>
+        <Dialog
+          open={isEditUserDialogOpen}
+          onOpenChange={setIsEditUserDialogOpen}
+        >
+          <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Rename Preferred Nickname</DialogTitle>
+              <DialogTitle>Edit User</DialogTitle>
               <DialogDescription>
-                Update your preferred nickname for poker games
+                Update your nickname and customize your icon
               </DialogDescription>
             </DialogHeader>
-            <Form {...form}>
+            <Form {...editUserForm}>
               <form
-                onSubmit={form.handleSubmit(handleRenameSubmit)}
-                className="space-y-4"
+                onSubmit={editUserForm.handleSubmit(handleEditUserSubmit)}
+                className="space-y-6"
               >
+                <div className="flex items-center justify-center py-4">
+                  <UserIcon
+                    userId={session.data.user.id}
+                    size={80}
+                    previewPatternType={
+                      editUserForm.watch("patternType") || undefined
+                    }
+                    previewBorderShape={
+                      editUserForm.watch("borderShape") || undefined
+                    }
+                    previewIconSeed={
+                      editUserForm.watch("iconSeed") || undefined
+                    }
+                  />
+                </div>
                 <FormField
-                  control={form.control}
+                  control={editUserForm.control}
                   name="nickname"
                   render={({ field }) => (
                     <FormItem>
@@ -187,19 +240,101 @@ export function AuthButton() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={editUserForm.control}
+                  name="patternType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Pattern Type</FormLabel>
+                      <Select
+                        onValueChange={(value) =>
+                          field.onChange(value === "auto" ? undefined : value)
+                        }
+                        value={field.value || "auto"}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Auto (random)" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="auto">Auto (random)</SelectItem>
+                          <SelectItem value="grid">Grid</SelectItem>
+                          <SelectItem value="dots">Dots</SelectItem>
+                          <SelectItem value="lines">Lines</SelectItem>
+                          <SelectItem value="shapes">Shapes</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editUserForm.control}
+                  name="borderShape"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Border Shape</FormLabel>
+                      <Select
+                        onValueChange={(value) =>
+                          field.onChange(value === "auto" ? undefined : value)
+                        }
+                        value={field.value || "auto"}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Auto (random)" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="auto">Auto (random)</SelectItem>
+                          <SelectItem value="wavy">Wavy</SelectItem>
+                          <SelectItem value="zigzag">Zigzag</SelectItem>
+                          <SelectItem value="scalloped">Scalloped</SelectItem>
+                          <SelectItem value="spiked">Spiked</SelectItem>
+                          <SelectItem value="rounded">Rounded</SelectItem>
+                          <SelectItem value="smooth">Smooth</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editUserForm.control}
+                  name="iconSeed"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Icon Seed (optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Leave empty to use user ID"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <DialogFooter>
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setIsRenameDialogOpen(false)}
+                    onClick={() => setIsEditUserDialogOpen(false)}
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
-                    disabled={updateNickname.isPending}
+                    disabled={
+                      updateNickname.isPending ||
+                      updateIconPreferences.isPending
+                    }
                   >
-                    {updateNickname.isPending && <Spinner className="mr-2" />}
+                    {(updateNickname.isPending ||
+                      updateIconPreferences.isPending) && (
+                      <Spinner className="mr-2" />
+                    )}
                     Save
                   </Button>
                 </DialogFooter>

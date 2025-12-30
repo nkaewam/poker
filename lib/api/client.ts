@@ -256,3 +256,34 @@ export async function updateSettlementMode(
   );
   return gameResponseSchema.parse(data);
 }
+
+/**
+ * Get the user's icon preferences (if authenticated)
+ */
+export async function getUserIconPreferences(): Promise<{
+  patternType: string | null;
+  borderShape: string | null;
+  iconSeed: string | null;
+}> {
+  const data = await fetchAPI<{
+    patternType: string | null;
+    borderShape: string | null;
+    iconSeed: string | null;
+  }>("/user/icon");
+  return data;
+}
+
+/**
+ * Update the user's icon preferences (if authenticated)
+ */
+export async function updateUserIconPreferences(request: {
+  patternType?: "grid" | "dots" | "lines" | "shapes";
+  borderShape?: "wavy" | "zigzag" | "scalloped" | "spiked" | "rounded" | "smooth";
+  iconSeed?: string;
+}): Promise<{ success: boolean }> {
+  const data = await fetchAPI<{ success: boolean }>("/user/icon", {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
+  return data;
+}

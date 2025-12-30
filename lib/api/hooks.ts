@@ -16,6 +16,8 @@ import {
   getUserNickname,
   updateUserNickname,
   updateSettlementMode,
+  getUserIconPreferences,
+  updateUserIconPreferences,
 } from "@/lib/api/client";
 import type {
   CreateGameRequest,
@@ -219,6 +221,9 @@ export function useUpdateUserNickname() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user", "nickname"] });
       queryClient.refetchQueries({ queryKey: ["user", "nickname"] });
+      // Invalidate all game queries since the backend updates all player records
+      // for this user's sessions, which affects game state
+      queryClient.invalidateQueries({ queryKey: gameKeys.all });
     },
   });
 }
@@ -234,6 +239,36 @@ export function useUpdateSettlementMode(gameCode: string) {
       updateSettlementMode(gameCode, request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: gameKeys.detail(gameCode) });
+    },
+  });
+}
+
+/**
+ * Get the user's icon preferences (if authenticated)
+ */
+export function useUserIconPreferences() {
+  return useQuery({
+    queryKey: ["user", "icon"],
+    queryFn: () => getUserIconPreferences(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+/**
+ * Update the user's icon preferences (if authenticated)
+ */
+export function useUpdateUserIconPreferences() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (request: {
+      patternType?: "grid" | "dots" | "lines" | "shapes";
+      borderShape?: "wavy" | "zigzag" | "scalloped" | "spiked" | "rounded" | "smooth";
+      iconSeed?: string;
+    }) => updateUserIconPreferences(request),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user", "icon"] });
+      queryClient.refetchQueries({ queryKey: ["user", "icon"] });
     },
   });
 }

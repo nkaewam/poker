@@ -31,7 +31,7 @@ function seededRandom(seed: number, max: number): number {
   return Math.floor((x - Math.floor(x)) * max);
 }
 
-type BorderShape =
+export type BorderShape =
   | "wavy"
   | "zigzag"
   | "scalloped"
@@ -42,15 +42,21 @@ type BorderShape =
 /**
  * Generates border style properties based on playerId
  */
-function generateBorderStyle(playerId: string, patternColors: string[]) {
+function generateBorderStyle(
+  playerId: string,
+  patternColors: string[],
+  preferredBorderShape?: BorderShape,
+  iconSize: number = 40
+) {
   const hash = hashString(playerId);
 
-  // Border width: 2px, 3px, or 4px
+  // Border width: 2px, 3px, or 4px (scaled proportionally to icon size)
   const widthSeed = seededRandom(hash + 100, 3);
-  const borderWidth = [2, 3, 4][widthSeed];
+  const baseBorderWidth = [2, 3, 4][widthSeed];
+  const baseIconSize = 40;
+  const borderWidth = (baseBorderWidth / baseIconSize) * iconSize;
 
-  // Border shape: wavy, zigzag, scalloped, spiked, rounded, or smooth
-  const shapeSeed = seededRandom(hash + 200, 6);
+  // Border shape: use preferred or generate from seed
   const borderShapes: BorderShape[] = [
     "wavy",
     "zigzag",
@@ -59,7 +65,9 @@ function generateBorderStyle(playerId: string, patternColors: string[]) {
     "rounded",
     "smooth",
   ];
-  const borderShape = borderShapes[shapeSeed];
+  const borderShape =
+    preferredBorderShape ||
+    borderShapes[seededRandom(hash + 200, borderShapes.length)];
 
   // Border color: use one of the pattern colors
   const colorSeed = seededRandom(hash + 300, patternColors.length);
@@ -161,15 +169,43 @@ function generateBorderPaths(
   };
 }
 
+interface PlayerIconOptions {
+  patternType?: IconPattern["type"];
+  borderShape?: BorderShape;
+  seed?: string;
+}
+
 export function PlayerIcon({
   playerId,
   size = 40,
   className,
-}: PlayerIconProps) {
-  const pattern = generateIconPattern(playerId);
-  const borderStyle = generateBorderStyle(playerId, pattern.colors);
-  const hash = hashString(playerId);
+  patternType,
+  borderShape,
+  seed,
+}: PlayerIconProps & PlayerIconOptions) {
+  const iconSeed = seed || playerId;
+  const basePattern = patternType
+    ? { ...generateIconPattern(iconSeed), type: patternType }
+    : generateIconPattern(iconSeed);
+  const borderStyle = generateBorderStyle(
+    iconSeed,
+    basePattern.colors,
+    borderShape,
+    size
+  );
+  const hash = hashString(iconSeed);
   const radius = size / 2;
+
+  // Scale pattern size proportionally to icon size
+  // Base pattern size is 8-12, base icon size is 40
+  // Scale pattern to maintain relative density
+  const baseIconSize = 40;
+  const scaledPatternSize = (basePattern.size / baseIconSize) * size;
+
+  const pattern = {
+    ...basePattern,
+    size: scaledPatternSize,
+  };
 
   // Calculate padding needed for decorative borders that extend outward
   // Max extension: borderWidth * 0.8 * 1.5 (for spiked) or radius * 0.2 * 1.5
@@ -205,8 +241,14 @@ export function PlayerIcon({
         width={size}
         height={size}
         viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`}
-        className="w-full h-full"
         preserveAspectRatio="xMidYMid meet"
+        className="size-auto"
+        style={{
+          width: `${size}px !important`,
+          height: `${size}px !important`,
+          minWidth: `${size}px`,
+          minHeight: `${size}px`,
+        }}
       >
         <defs>
           <pattern
@@ -220,7 +262,7 @@ export function PlayerIcon({
               pattern.size / 2
             })`}
           >
-            {renderPatternContent(pattern, size)}
+            {renderPatternContent(pattern, pattern.size)}
           </pattern>
           {/* Clip path for decorative border shape */}
           <clipPath id={`clip-${playerId}`}>

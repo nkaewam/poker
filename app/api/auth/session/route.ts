@@ -10,6 +10,17 @@ import { getCached } from "@/lib/cache/utils";
 import { cookies } from "next/headers";
 
 /**
+ * Convert Date or string to ISO string
+ * Handles both Date objects (from database) and strings (from cache)
+ */
+function toISOString(date: Date | string): string {
+  if (typeof date === "string") {
+    return date;
+  }
+  return date.toISOString();
+}
+
+/**
  * Get session - prefers better-auth session for signed-in users,
  * falls back to anonymous session
  */
@@ -81,8 +92,8 @@ export async function GET() {
       sessionResponseSchema.parse({
         id: sessionData.id,
         token: sessionData.token,
-        createdAt: sessionData.createdAt.toISOString(),
-        expiresAt: sessionData.expiresAt.toISOString(),
+        createdAt: toISOString(sessionData.createdAt),
+        expiresAt: toISOString(sessionData.expiresAt),
       })
     );
   } catch (error) {
@@ -102,8 +113,8 @@ export async function POST() {
       sessionResponseSchema.parse({
         id: session.id,
         token: session.token,
-        createdAt: session.createdAt.toISOString(),
-        expiresAt: session.expiresAt.toISOString(),
+        createdAt: toISOString(session.createdAt),
+        expiresAt: toISOString(session.expiresAt),
       })
     );
   } catch (error) {

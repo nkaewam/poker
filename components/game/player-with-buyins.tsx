@@ -17,6 +17,7 @@ interface PlayerWithBuyInsProps {
   buyIns: number[];
   total: number;
   gameState: GameState;
+  buyInAmount: number | null;
   onUpdateName: (name: string) => void;
   onAddBuyIn: (amount: number) => void;
   onRemoveBuyIn: (index: number) => void;
@@ -30,6 +31,7 @@ export function PlayerWithBuyIns({
   buyIns,
   total,
   gameState,
+  buyInAmount,
   onUpdateName,
   onAddBuyIn,
   onRemoveBuyIn,
@@ -70,6 +72,9 @@ export function PlayerWithBuyIns({
     }
   };
 
+  // Determine preset amounts: use buyInAmount if set, otherwise fallback to defaults
+  const presetAmounts = buyInAmount ? [buyInAmount] : [100, 200, 300];
+
   // Check if this specific player's buy-in is loading
   const isThisPlayerLoading = loadingBuyIn?.playerId === player.id;
   const isThisPlayerRemoving = removingBuyIn?.playerId === player.id;
@@ -84,9 +89,7 @@ export function PlayerWithBuyIns({
   const isCustomAmountLoading =
     isThisPlayerLoading &&
     loadingBuyIn &&
-    loadingBuyIn.amount !== 100 &&
-    loadingBuyIn.amount !== 200 &&
-    loadingBuyIn.amount !== 300;
+    !presetAmounts.includes(loadingBuyIn.amount);
 
   // Helper to check if a specific remove button is loading
   const isRemoveButtonLoading = (index: number) =>
@@ -163,30 +166,17 @@ export function PlayerWithBuyIns({
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <div className="w-full sm:w-auto">
             <ButtonGroup className="w-full sm:w-auto">
-              <Button
-                variant="outline"
-                onClick={() => onAddBuyIn(100)}
-                disabled={isLoading}
-              >
-                {isAmountLoading(100) && <Spinner className="mr-2" />}
-                +฿100
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => onAddBuyIn(200)}
-                disabled={isLoading}
-              >
-                {isAmountLoading(200) && <Spinner className="mr-2" />}
-                +฿200
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => onAddBuyIn(300)}
-                disabled={isLoading}
-              >
-                {isAmountLoading(300) && <Spinner className="mr-2" />}
-                +฿300
-              </Button>
+              {presetAmounts.map((amount) => (
+                <Button
+                  key={amount}
+                  variant="outline"
+                  onClick={() => onAddBuyIn(amount)}
+                  disabled={isLoading}
+                >
+                  {isAmountLoading(amount) && <Spinner className="mr-2" />}+
+                  {formatCurrency(amount)}
+                </Button>
+              ))}
             </ButtonGroup>
           </div>
           <div className="w-full sm:flex-1 sm:min-w-[200px]">

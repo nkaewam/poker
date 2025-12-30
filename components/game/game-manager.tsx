@@ -44,6 +44,7 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
     totalBuyIns,
     totalFinals,
     discrepancy,
+    buyInAmount,
     isLoading,
     error,
   } = useGameState(gameCode);
@@ -143,6 +144,7 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
           <TabsContent value="players" className="mt-6">
             <PlayersTab
               state={state}
+              buyInAmount={buyInAmount}
               onUpdatePlayerName={updatePlayerName}
               onAddBuyIn={addBuyIn}
               onRemoveBuyIn={removeBuyIn}

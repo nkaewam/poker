@@ -22,6 +22,7 @@ export async function POST(request: Request) {
       .insert(games)
       .values({
         gameCode,
+        buyInAmount: validated.buyInAmount.toString(),
       })
       .returning();
 
@@ -82,6 +83,7 @@ export async function POST(request: Request) {
     const response = {
       id: gameData.id,
       gameCode: gameData.gameCode,
+      buyInAmount: gameData.buyInAmount,
       createdAt: gameData.createdAt.toISOString(),
       players: gameData.players.map((p) => ({
         id: p.id,

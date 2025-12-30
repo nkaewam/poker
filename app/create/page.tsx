@@ -25,14 +25,22 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { authClient } from "@/components/auth/auth-provider";
 
-const playerNameSchema = z.object({
+const createGameSchema = z.object({
   playerName: z
     .string()
     .min(1, "Name is required")
     .max(50, "Name must be less than 50 characters"),
+  buyInAmount: z
+    .number({
+      message: "Buy-in amount is required",
+    })
+    .refine((val) => !isNaN(val), {
+      message: "Buy-in amount is required",
+    })
+    .positive("Buy-in amount must be positive"),
 });
 
-type PlayerNameFormValues = z.infer<typeof playerNameSchema>;
+type CreateGameFormValues = z.infer<typeof createGameSchema>;
 
 export default function CreateGamePage() {
   const router = useRouter();
@@ -45,10 +53,11 @@ export default function CreateGamePage() {
   const hasNickname = !!nicknameData?.nickname;
   const shouldSkipNicknameInput = isAuthenticated && hasNickname;
 
-  const form = useForm<PlayerNameFormValues>({
-    resolver: zodResolver(playerNameSchema),
+  const form = useForm<CreateGameFormValues>({
+    resolver: zodResolver(createGameSchema),
     defaultValues: {
       playerName: "",
+      buyInAmount: undefined,
     },
   });
 
@@ -64,15 +73,21 @@ export default function CreateGamePage() {
     }
   }, [nicknameData, lastPlayerNameData, form]);
 
-  const handleSubmit = async (data?: PlayerNameFormValues) => {
+  const handleSubmit = async (data?: CreateGameFormValues) => {
     try {
       // If authenticated with nickname, use nickname; otherwise use form data
       const playerName = shouldSkipNicknameInput
         ? nicknameData!.nickname!
         : data!.playerName.trim();
 
+      // buyInAmount is required, so it must be present in data
+      if (!data?.buyInAmount) {
+        return; // Form validation should prevent this, but add safety check
+      }
+
       const game = await createGameMutation.mutateAsync({
         playerName,
+        buyInAmount: data.buyInAmount,
       });
       router.push(`/g/${game.gameCode}`);
     } catch (error) {
@@ -98,30 +113,64 @@ export default function CreateGamePage() {
           </div>
 
           {shouldSkipNicknameInput ? (
-            <div className="space-y-4">
-              <div className="text-center py-4">
-                <p className="text-sm text-muted-foreground">
-                  Playing as:{" "}
-                  <span className="font-semibold">
-                    {nicknameData?.nickname}
-                  </span>
-                </p>
-              </div>
-              <Button
-                type="button"
-                className="w-full text-white"
-                size="lg"
-                disabled={createGameMutation.isPending}
-                onClick={() => handleSubmit()}
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(handleSubmit)}
+                className="space-y-4"
               >
-                {createGameMutation.isPending && <Spinner className="mr-2" />}
-                {createGameMutation.isPending ? "Creating..." : "Create Game"}
-              </Button>
+                <div className="text-center py-4">
+                  <p className="text-sm text-muted-foreground">
+                    Playing as:{" "}
+                    <span className="font-semibold">
+                      {nicknameData?.nickname}
+                    </span>
+                  </p>
+                </div>
+                <FormField
+                  control={form.control}
+                  name="buyInAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Buy-in Amount (฿)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="100"
+                          className="text-center"
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            field.onChange(
+                              value === "" ? NaN : parseFloat(value)
+                            );
+                          }}
+                          value={isNaN(field.value) ? "" : field.value}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button
+                  type="submit"
+                  className="w-full text-white"
+                  size="lg"
+                  disabled={createGameMutation.isPending}
+                >
+                  {createGameMutation.isPending && <Spinner className="mr-2" />}
+                  {createGameMutation.isPending ? "Creating..." : "Create Game"}
+                </Button>
 
-              <Button type="button" asChild variant="ghost" className="w-full">
-                <Link href="/">Back</Link>
-              </Button>
-            </div>
+                <Button
+                  type="button"
+                  asChild
+                  variant="ghost"
+                  className="w-full"
+                >
+                  <Link href="/">Back</Link>
+                </Button>
+              </form>
+            </Form>
           ) : (
             <Form {...form}>
               <form
@@ -140,6 +189,32 @@ export default function CreateGamePage() {
                           className="text-center"
                           autoFocus
                           {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="buyInAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Buy-in Amount (฿)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="100"
+                          className="text-center"
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            field.onChange(
+                              value === "" ? NaN : parseFloat(value)
+                            );
+                          }}
+                          value={isNaN(field.value) ? "" : field.value}
                         />
                       </FormControl>
                       <FormMessage />

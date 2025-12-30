@@ -75,6 +75,7 @@ export function useGameState(gameCode: string | undefined) {
     totalBuyIns,
     totalFinals,
     discrepancy,
+    buyInAmount: game?.buyInAmount ? parseFloat(game.buyInAmount) : null,
     isLoading,
     error,
   };

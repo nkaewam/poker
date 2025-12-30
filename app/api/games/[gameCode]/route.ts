@@ -36,6 +36,7 @@ export async function GET(
     const response = {
       id: gameData.id,
       gameCode: gameData.gameCode,
+      buyInAmount: gameData.buyInAmount,
       createdAt: gameData.createdAt.toISOString(),
       players: gameData.players.map((p) => ({
         id: p.id,

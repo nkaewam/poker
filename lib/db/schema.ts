@@ -19,6 +19,7 @@ export const games = pgTable(
   {
     id: serial("id").primaryKey(),
     gameCode: varchar("game_code", { length: 5 }).notNull().unique(),
+    buyInAmount: decimal("buy_in_amount", { precision: 10, scale: 2 }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => ({

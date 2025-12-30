@@ -6,6 +6,7 @@ import { AddPlayerForm } from "./add-player-form";
 
 interface PlayersTabProps {
   state: GameState;
+  buyInAmount: number | null;
   onUpdatePlayerName: (id: string, name: string) => void;
   onAddBuyIn: (playerId: string, amount: number) => void;
   onRemoveBuyIn: (playerId: string, index: number) => void;
@@ -20,6 +21,7 @@ interface PlayersTabProps {
 
 export function PlayersTab({
   state,
+  buyInAmount,
   onUpdatePlayerName,
   onAddBuyIn,
   onRemoveBuyIn,
@@ -56,6 +58,7 @@ export function PlayersTab({
                 buyIns={buyIns}
                 total={total}
                 gameState={state}
+                buyInAmount={buyInAmount}
                 onUpdateName={(name) => onUpdatePlayerName(player.id, name)}
                 onAddBuyIn={(amount) => onAddBuyIn(player.id, amount)}
                 onRemoveBuyIn={(index) => onRemoveBuyIn(player.id, index)}

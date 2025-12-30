@@ -23,6 +23,7 @@ export const amountSchema = z
 // Request schemas
 export const createGameRequestSchema = z.object({
   playerName: playerNameSchema,
+  buyInAmount: amountSchema,
 });
 
 export const joinGameRequestSchema = z.object({
@@ -72,6 +73,7 @@ export const finalResponseSchema = z.object({
 export const gameResponseSchema = z.object({
   id: z.number(),
   gameCode: z.string(),
+  buyInAmount: z.string().nullable().optional(), // Decimal returned as string from database
   createdAt: z.string().datetime(),
   players: z.array(playerResponseSchema),
   buyIns: z.array(buyInResponseSchema),

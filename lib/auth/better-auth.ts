@@ -2,12 +2,14 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
+import { authSecondaryStorage } from "@/lib/cache";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
     schema,
   }),
+  secondaryStorage: authSecondaryStorage,
   emailAndPassword: {
     enabled: false,
   },
@@ -17,6 +19,7 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     },
   },
+
   baseURL:
     process.env.BETTER_AUTH_URL ||
     process.env.NEXT_PUBLIC_BETTER_AUTH_URL ||

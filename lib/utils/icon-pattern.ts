@@ -45,9 +45,60 @@ function seededRandom(seed: number, max: number): number {
 }
 
 /**
- * Generates an icon pattern from a seed (typically player ID)
+ * Converts hex color to RGB
  */
-export function generateIconPattern(seed: string): IconPattern {
+function hexToRgb(hex: string): [number, number, number] {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? [
+        parseInt(result[1], 16),
+        parseInt(result[2], 16),
+        parseInt(result[3], 16),
+      ]
+    : [0, 0, 0];
+}
+
+/**
+ * Converts RGB to hex
+ */
+function rgbToHex(r: number, g: number, b: number): string {
+  return `#${[r, g, b].map((x) => x.toString(16).padStart(2, "0")).join("")}`;
+}
+
+/**
+ * Lightens a color by a percentage
+ */
+function lightenColor(hex: string, percent: number): string {
+  const [r, g, b] = hexToRgb(hex);
+  const factor = 1 + percent / 100;
+  return rgbToHex(
+    Math.min(255, Math.round(r * factor)),
+    Math.min(255, Math.round(g * factor)),
+    Math.min(255, Math.round(b * factor))
+  );
+}
+
+/**
+ * Darkens a color by a percentage
+ */
+function darkenColor(hex: string, percent: number): string {
+  const [r, g, b] = hexToRgb(hex);
+  const factor = 1 - percent / 100;
+  return rgbToHex(
+    Math.max(0, Math.round(r * factor)),
+    Math.max(0, Math.round(g * factor)),
+    Math.max(0, Math.round(b * factor))
+  );
+}
+
+/**
+ * Generates an icon pattern from a seed (typically player ID)
+ * If preferredColor is provided, it will be used as the primary color
+ */
+export function generateIconPattern(
+  seed: string,
+  preferredColor?: string
+): IconPattern {
   const hash = hashString(seed);
 
   // Select pattern type
@@ -55,9 +106,18 @@ export function generateIconPattern(seed: string): IconPattern {
   const types: IconPattern["type"][] = ["grid", "dots", "lines", "shapes"];
   const type = types[typeIndex];
 
-  // Select color palette
-  const colorIndex = seededRandom(hash + 1, COLOR_PALETTES.length);
-  const colors = COLOR_PALETTES[colorIndex];
+  // Select color palette or use preferred color
+  let colors: string[];
+  if (preferredColor) {
+    // Generate variations of the preferred color (lighter and darker shades)
+    const baseColor = preferredColor;
+    const lighter = lightenColor(baseColor, 30);
+    const darker = darkenColor(baseColor, 20);
+    colors = [baseColor, lighter, darker];
+  } else {
+    const colorIndex = seededRandom(hash + 1, COLOR_PALETTES.length);
+    colors = COLOR_PALETTES[colorIndex];
+  }
 
   // Generate other properties
   const size = 8 + seededRandom(hash + 2, 5); // 8-12

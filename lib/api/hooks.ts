@@ -250,7 +250,9 @@ export function useUserIconPreferences() {
   return useQuery({
     queryKey: ["user", "icon"],
     queryFn: () => getUserIconPreferences(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // Always consider data stale to ensure immediate updates
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -265,10 +267,11 @@ export function useUpdateUserIconPreferences() {
       patternType?: "grid" | "dots" | "lines" | "shapes";
       borderShape?: "wavy" | "zigzag" | "scalloped" | "spiked" | "rounded" | "smooth";
       iconSeed?: string;
+      iconColor?: string;
     }) => updateUserIconPreferences(request),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user", "icon"] });
-      queryClient.refetchQueries({ queryKey: ["user", "icon"] });
+    onSuccess: async () => {
+      // Invalidate queries - this automatically triggers a refetch for active queries
+      await queryClient.invalidateQueries({ queryKey: ["user", "icon"], refetchType: "active" });
     },
   });
 }

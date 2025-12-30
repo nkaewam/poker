@@ -264,11 +264,13 @@ export async function getUserIconPreferences(): Promise<{
   patternType: string | null;
   borderShape: string | null;
   iconSeed: string | null;
+  iconColor: string | null;
 }> {
   const data = await fetchAPI<{
     patternType: string | null;
     borderShape: string | null;
     iconSeed: string | null;
+    iconColor: string | null;
   }>("/user/icon");
   return data;
 }
@@ -280,6 +282,7 @@ export async function updateUserIconPreferences(request: {
   patternType?: "grid" | "dots" | "lines" | "shapes";
   borderShape?: "wavy" | "zigzag" | "scalloped" | "spiked" | "rounded" | "smooth";
   iconSeed?: string;
+  iconColor?: string;
 }): Promise<{ success: boolean }> {
   const data = await fetchAPI<{ success: boolean }>("/user/icon", {
     method: "POST",

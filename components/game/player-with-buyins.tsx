@@ -8,8 +8,10 @@ import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, parseCurrency } from "@/lib/format";
 import { PlayerIcon } from "@/components/game/player-icon";
+import { UserIcon } from "@/components/auth/user-icon";
 import { isGuestPlayer } from "@/lib/utils/player-utils";
 import { useSession } from "@/lib/api/hooks";
+import { authClient } from "@/components/auth/auth-provider";
 import type { GameState } from "@/lib/storage";
 import { TrashIcon } from "lucide-react";
 
@@ -41,10 +43,16 @@ export function PlayerWithBuyIns({
   removingBuyIn,
 }: PlayerWithBuyInsProps) {
   const { data: session } = useSession();
+  const authSession = authClient.useSession();
   const isGuest = isGuestPlayer(player.id, gameState);
   const [isEditingName, setIsEditingName] = useState(false);
   const [name, setName] = useState(player.name);
   const [customAmount, setCustomAmount] = useState("");
+
+  // Check if this player belongs to the current authenticated user
+  // Use UserIcon if the player's session matches the current session AND user is authenticated
+  const isCurrentUser =
+    authSession.data?.user && player.sessionId === session?.id;
 
   // Check if the current user can edit this player's name (only for guest players created by the current user, not authenticated players)
   const canEditName = isGuest && player.sessionId === session?.id;
@@ -134,7 +142,11 @@ export function PlayerWithBuyIns({
           </>
         ) : (
           <>
-            <PlayerIcon playerId={player.id} size={40} />
+            {isCurrentUser && authSession.data?.user ? (
+              <UserIcon userId={authSession.data.user.id} size={40} />
+            ) : (
+              <PlayerIcon playerId={player.id} size={40} />
+            )}
             <span className="font-semibold text-lg">{player.name}</span>
             {isGuest && (
               <Badge

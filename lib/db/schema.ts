@@ -44,6 +44,7 @@ export const user = pgTable("user", {
   iconPatternType: varchar("icon_pattern_type", { length: 20 }),
   iconBorderShape: varchar("icon_border_shape", { length: 20 }),
   iconSeed: text("icon_seed"),
+  iconColor: varchar("icon_color", { length: 7 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()

@@ -13,6 +13,7 @@ interface UserIconProps {
   previewPatternType?: IconPattern["type"];
   previewBorderShape?: BorderShape;
   previewIconSeed?: string;
+  previewIconColor?: string;
 }
 
 export function UserIcon({
@@ -22,8 +23,9 @@ export function UserIcon({
   previewPatternType,
   previewBorderShape,
   previewIconSeed,
+  previewIconColor,
 }: UserIconProps) {
-  const { data: iconPreferences } = useUserIconPreferences();
+  const { data: iconPreferences, dataUpdatedAt } = useUserIconPreferences();
 
   // Use preview props if provided (for dialog preview), otherwise use saved preferences
   const patternType =
@@ -40,16 +42,39 @@ export function UserIcon({
       ? (iconPreferences.borderShape as BorderShape)
       : undefined;
 
-  const iconSeed = previewIconSeed || iconPreferences?.iconSeed || userId;
+  // Handle iconSeed: use preview if provided, otherwise use saved preference (null/empty means use userId)
+  const iconSeed =
+    previewIconSeed !== undefined
+      ? previewIconSeed || userId
+      : iconPreferences?.iconSeed && iconPreferences.iconSeed.trim() !== ""
+      ? iconPreferences.iconSeed
+      : userId;
+
+  // Handle iconColor: use preview if provided, otherwise use saved preference
+  const iconColor =
+    previewIconColor !== undefined
+      ? previewIconColor
+      : iconPreferences?.iconColor || undefined;
+
+  // Create a key based on icon preferences - this will change when preferences change
+  // Using a stable string format ensures React recognizes the change and remounts
+  const iconKey = `${iconSeed}-${patternType || "auto"}-${
+    borderShape || "auto"
+  }-${iconColor || "auto"}`;
+
+  // Use a separate remount key that includes dataUpdatedAt to force remount when query updates
+  const remountKey = `${iconKey}-${dataUpdatedAt || 0}`;
 
   return (
     <PlayerIcon
+      key={remountKey}
       playerId={iconSeed}
       size={size}
       className={cn("flex items-center justify-center", className)}
       patternType={patternType}
       borderShape={borderShape}
       seed={iconSeed}
+      preferredColor={iconColor}
     />
   );
 }

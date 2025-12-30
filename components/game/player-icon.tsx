@@ -173,6 +173,7 @@ interface PlayerIconOptions {
   patternType?: IconPattern["type"];
   borderShape?: BorderShape;
   seed?: string;
+  preferredColor?: string;
 }
 
 export function PlayerIcon({
@@ -182,11 +183,18 @@ export function PlayerIcon({
   patternType,
   borderShape,
   seed,
+  preferredColor,
 }: PlayerIconProps & PlayerIconOptions) {
   const iconSeed = seed || playerId;
+  // Generate a unique ID for this icon instance to avoid pattern ID conflicts
+  // Use a hash to create a stable, URL-safe ID
+  const idString = `${playerId}-${iconSeed}-${patternType || "auto"}-${
+    borderShape || "auto"
+  }-${preferredColor || "auto"}`;
+  const iconId = `icon-${hashString(idString)}`;
   const basePattern = patternType
-    ? { ...generateIconPattern(iconSeed), type: patternType }
-    : generateIconPattern(iconSeed);
+    ? { ...generateIconPattern(iconSeed, preferredColor), type: patternType }
+    : generateIconPattern(iconSeed, preferredColor);
   const borderStyle = generateBorderStyle(
     iconSeed,
     basePattern.colors,
@@ -252,7 +260,7 @@ export function PlayerIcon({
       >
         <defs>
           <pattern
-            id={`pattern-${playerId}`}
+            id={`pattern-${iconId}`}
             x="0"
             y="0"
             width={pattern.size}
@@ -265,7 +273,7 @@ export function PlayerIcon({
             {renderPatternContent(pattern, pattern.size)}
           </pattern>
           {/* Clip path for decorative border shape */}
-          <clipPath id={`clip-${playerId}`}>
+          <clipPath id={`clip-${iconId}`}>
             <path d={clipPath} />
           </clipPath>
         </defs>
@@ -275,8 +283,8 @@ export function PlayerIcon({
           y={padding}
           width={size}
           height={size}
-          fill={`url(#pattern-${playerId})`}
-          clipPath={`url(#clip-${playerId})`}
+          fill={`url(#pattern-${iconId})`}
+          clipPath={`url(#clip-${iconId})`}
         />
         {/* Decorative border stroke */}
         <path
@@ -321,21 +329,20 @@ function renderGridPattern(
   for (let i = 0; i < density; i++) {
     for (let j = 0; j < density; j++) {
       const colorIndex = (i + j + variant) % colors.length;
+      // Fill all cells with alternating colors for grid pattern
       const shouldFill = (i + j + variant) % 2 === 0;
 
-      if (shouldFill) {
-        elements.push(
-          <rect
-            key={`${i}-${j}`}
-            x={i * step}
-            y={j * step}
-            width={step}
-            height={step}
-            fill={colors[colorIndex]}
-            opacity={0.8}
-          />
-        );
-      }
+      elements.push(
+        <rect
+          key={`${i}-${j}`}
+          x={i * step}
+          y={j * step}
+          width={step}
+          height={step}
+          fill={colors[colorIndex]}
+          opacity={shouldFill ? 0.8 : 0.5}
+        />
+      );
     }
   }
 

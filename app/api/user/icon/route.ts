@@ -12,6 +12,7 @@ const iconPreferencesSchema = z.object({
     .enum(["wavy", "zigzag", "scalloped", "spiked", "rounded", "smooth"])
     .optional(),
   iconSeed: z.string().optional(),
+  iconColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
 });
 
 export async function GET() {
@@ -26,6 +27,7 @@ export async function GET() {
         patternType: null,
         borderShape: null,
         iconSeed: null,
+        iconColor: null,
       });
     }
 
@@ -42,12 +44,14 @@ export async function GET() {
             iconPatternType: true,
             iconBorderShape: true,
             iconSeed: true,
+            iconColor: true,
           },
         });
         return {
           patternType: userData?.iconPatternType || null,
           borderShape: userData?.iconBorderShape || null,
           iconSeed: userData?.iconSeed || null,
+          iconColor: userData?.iconColor || null,
         };
       }
     );
@@ -59,6 +63,7 @@ export async function GET() {
       patternType: null,
       borderShape: null,
       iconSeed: null,
+      iconColor: null,
     });
   }
 }
@@ -84,6 +89,7 @@ export async function POST(request: Request) {
         iconPatternType: validated.patternType || null,
         iconBorderShape: validated.borderShape || null,
         iconSeed: validated.iconSeed || null,
+        iconColor: validated.iconColor || null,
         updatedAt: new Date(),
       })
       .where(eq(user.id, session.user.id));

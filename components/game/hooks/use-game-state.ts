@@ -33,6 +33,7 @@ export function useGameState(gameCode: string | undefined) {
       return {
         playerId: player.id,
         net,
+        final,
       };
     });
   }, [state]);
@@ -66,6 +67,16 @@ export function useGameState(gameCode: string | undefined) {
     [totalFinals, totalBuyIns]
   );
 
+  const settlementMode = useMemo(
+    () => game?.settlementMode || "PEER_TO_PEER",
+    [game]
+  );
+
+  const collectorPlayerId = useMemo(
+    () => game?.collectorPlayerId || null,
+    [game]
+  );
+
   return {
     game,
     state,
@@ -76,6 +87,8 @@ export function useGameState(gameCode: string | undefined) {
     totalFinals,
     discrepancy,
     buyInAmount: game?.buyInAmount ? parseFloat(game.buyInAmount) : null,
+    settlementMode,
+    collectorPlayerId,
     isLoading,
     error,
   };

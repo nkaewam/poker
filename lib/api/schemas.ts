@@ -20,10 +20,17 @@ export const amountSchema = z
   .positive("Amount must be positive")
   .finite();
 
+// Settlement mode validation
+export const settlementModeSchema = z.enum(["COLLECTOR", "PEER_TO_PEER"]);
+
 // Request schemas
 export const createGameRequestSchema = z.object({
   playerName: playerNameSchema,
   buyInAmount: amountSchema,
+  settlementMode: settlementModeSchema.optional(),
+  collectorPlayerId: z.string().uuid().optional(),
+  // Note: collectorPlayerId is optional at creation - if COLLECTOR mode is selected,
+  // the creator will be set as the collector automatically
 });
 
 export const joinGameRequestSchema = z.object({
@@ -46,6 +53,29 @@ export const addBuyInRequestSchema = z.object({
 export const updateFinalRequestSchema = z.object({
   amount: z.number().nonnegative("Amount must be non-negative").finite(),
 });
+
+export const updateSettlementModeRequestSchema = z
+  .object({
+    settlementMode: settlementModeSchema,
+    collectorPlayerId: z.string().uuid().optional().nullable(),
+  })
+  .refine(
+    (data) => {
+      // If mode is COLLECTOR, collectorPlayerId should be provided
+      if (data.settlementMode === "COLLECTOR" && !data.collectorPlayerId) {
+        return false;
+      }
+      // If mode is PEER_TO_PEER, collectorPlayerId should be null
+      if (data.settlementMode === "PEER_TO_PEER" && data.collectorPlayerId) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message:
+        "Collector player ID is required when settlement mode is COLLECTOR, and must be null for PEER_TO_PEER",
+    }
+  );
 
 // Response schemas
 export const playerResponseSchema = z.object({
@@ -74,6 +104,8 @@ export const gameResponseSchema = z.object({
   id: z.number(),
   gameCode: z.string(),
   buyInAmount: z.string().nullable().optional(), // Decimal returned as string from database
+  settlementMode: settlementModeSchema,
+  collectorPlayerId: z.string().uuid().nullable().optional(),
   createdAt: z.string().datetime(),
   players: z.array(playerResponseSchema),
   buyIns: z.array(buyInResponseSchema),
@@ -110,6 +142,9 @@ export type AddPlayerRequest = z.infer<typeof addPlayerRequestSchema>;
 export type UpdatePlayerRequest = z.infer<typeof updatePlayerRequestSchema>;
 export type AddBuyInRequest = z.infer<typeof addBuyInRequestSchema>;
 export type UpdateFinalRequest = z.infer<typeof updateFinalRequestSchema>;
+export type UpdateSettlementModeRequest = z.infer<
+  typeof updateSettlementModeRequestSchema
+>;
 
 export type PlayerResponse = z.infer<typeof playerResponseSchema>;
 export type BuyInResponse = z.infer<typeof buyInResponseSchema>;

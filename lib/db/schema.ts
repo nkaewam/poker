@@ -20,6 +20,12 @@ export const games = pgTable(
     id: serial("id").primaryKey(),
     gameCode: varchar("game_code", { length: 5 }).notNull().unique(),
     buyInAmount: decimal("buy_in_amount", { precision: 10, scale: 2 }),
+    settlementMode: varchar("settlement_mode", { length: 20 })
+      .notNull()
+      .default("PEER_TO_PEER"),
+    collectorPlayerId: uuid("collector_player_id").references(() => players.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => ({
@@ -199,15 +205,21 @@ export const accountRelations = relations(account, ({ one }) => ({
   }),
 }));
 
-export const gamesRelations = relations(games, ({ many }) => ({
-  players: many(players),
+export const gamesRelations = relations(games, ({ one, many }) => ({
+  players: many(players, { relationName: "gamePlayers" }),
   logs: many(gameLogs),
+  collector: one(players, {
+    fields: [games.collectorPlayerId],
+    references: [players.id],
+    relationName: "collector",
+  }),
 }));
 
 export const playersRelations = relations(players, ({ one, many }) => ({
   game: one(games, {
     fields: [players.gameId],
     references: [games.id],
+    relationName: "gamePlayers",
   }),
   session: one(session, {
     fields: [players.sessionId],
@@ -217,6 +229,7 @@ export const playersRelations = relations(players, ({ one, many }) => ({
   final: one(finals),
   affectedLogs: many(gameLogs, { relationName: "affectedPlayer" }),
   actorLogs: many(gameLogs, { relationName: "actorPlayer" }),
+  collectorGames: many(games, { relationName: "collector" }),
 }));
 
 export const buyInsRelations = relations(buyIns, ({ one }) => ({

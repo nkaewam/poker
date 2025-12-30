@@ -19,11 +19,15 @@ export async function POST(request: Request) {
     const gameCode = await generateUniqueGameCode();
 
     // Create game and first player in a transaction
+    const settlementMode = validated.settlementMode || "PEER_TO_PEER";
+    
     const [game] = await db
       .insert(games)
       .values({
         gameCode,
         buyInAmount: validated.buyInAmount.toString(),
+        settlementMode,
+        collectorPlayerId: null, // Will be set after player is created if needed
       })
       .returning();
 
@@ -35,6 +39,26 @@ export async function POST(request: Request) {
         name: validated.playerName,
       })
       .returning();
+
+    // If collector mode and collectorPlayerId is provided, validate it's the created player
+    // If collector mode but no collectorPlayerId, default to the creator
+    let collectorPlayerId = validated.collectorPlayerId;
+    if (settlementMode === "COLLECTOR") {
+      if (collectorPlayerId && collectorPlayerId !== player.id) {
+        return NextResponse.json(
+          { error: "Collector player ID must be the game creator at creation time" },
+          { status: 400 }
+        );
+      }
+      // Default to creator if not specified
+      collectorPlayerId = collectorPlayerId || player.id;
+      
+      // Update game with collector player ID
+      await db
+        .update(games)
+        .set({ collectorPlayerId })
+        .where((games, { eq }) => eq(games.id, game.id));
+    }
 
     // Log game creation (fire-and-forget)
     createGameLog({
@@ -80,20 +104,42 @@ export async function POST(request: Request) {
       );
     }
 
+    // Fetch updated game data to get collectorPlayerId
+    const updatedGameData = await db.query.games.findFirst({
+      where: (games, { eq }) => eq(games.id, game.id),
+      with: {
+        players: {
+          with: {
+            buyIns: true,
+            final: true,
+          },
+        },
+      },
+    });
+
+    if (!updatedGameData) {
+      return NextResponse.json(
+        { error: "Failed to retrieve created game" },
+        { status: 500 }
+      );
+    }
+
     // Transform to response format
     const response = {
-      id: gameData.id,
-      gameCode: gameData.gameCode,
-      buyInAmount: gameData.buyInAmount,
-      createdAt: gameData.createdAt.toISOString(),
-      players: gameData.players.map((p) => ({
+      id: updatedGameData.id,
+      gameCode: updatedGameData.gameCode,
+      buyInAmount: updatedGameData.buyInAmount,
+      settlementMode: updatedGameData.settlementMode,
+      collectorPlayerId: updatedGameData.collectorPlayerId,
+      createdAt: updatedGameData.createdAt.toISOString(),
+      players: updatedGameData.players.map((p) => ({
         id: p.id,
         gameId: p.gameId,
         sessionId: p.sessionId,
         name: p.name,
         createdAt: p.createdAt.toISOString(),
       })),
-      buyIns: gameData.players.flatMap((p) =>
+      buyIns: updatedGameData.players.flatMap((p) =>
         (p.buyIns || []).map((bi) => ({
           id: bi.id,
           playerId: bi.playerId,
@@ -101,7 +147,7 @@ export async function POST(request: Request) {
           createdAt: bi.createdAt.toISOString(),
         }))
       ),
-      finals: gameData.players
+      finals: updatedGameData.players
         .filter((p) => p.final)
         .map((p) => ({
           id: p.final!.id,
@@ -115,7 +161,7 @@ export async function POST(request: Request) {
 
     // Warm the cache with the newly created game data
     const cacheKey = `game:${gameCode.toUpperCase()}`;
-    await setCache(cacheKey, gameData, 2); // 2 second TTL
+    await setCache(cacheKey, updatedGameData, 2); // 2 second TTL
 
     return NextResponse.json(validatedResponse);
   } catch (error) {

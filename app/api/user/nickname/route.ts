@@ -17,7 +17,7 @@ const updateNicknameSchema = z.object({
 
 export async function GET() {
   try {
-    const headers = await import("next/headers").then(m => m.headers());
+    const headers = await import("next/headers").then((m) => m.headers());
     const session = await auth.api.getSession({
       headers: headers as unknown as Headers,
     });
@@ -52,16 +52,13 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const headers = await import("next/headers").then(m => m.headers());
+    const headers = await import("next/headers").then((m) => m.headers());
     const session = await auth.api.getSession({
       headers: headers as unknown as Headers,
     });
 
     if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
@@ -77,7 +74,7 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validation error", details: error.errors },
+        { error: "Validation error", details: error },
         { status: 400 }
       );
     }

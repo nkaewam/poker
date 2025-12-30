@@ -45,6 +45,8 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
     totalFinals,
     discrepancy,
     buyInAmount,
+    settlementMode,
+    collectorPlayerId,
     isLoading,
     error,
   } = useGameState(gameCode);
@@ -56,6 +58,7 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
     addBuyIn,
     removeBuyIn,
     updateFinal,
+    updateSettlementMode,
     isUpdatingName,
     isAddingPlayer,
     isAddingBuyIn,
@@ -63,6 +66,7 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
     isRemovingBuyIn,
     removingBuyIn,
     isUpdatingFinal,
+    isUpdatingSettlementMode,
   } = useGameActions({
     gameCode,
     game,
@@ -171,7 +175,15 @@ export function GameManager({ gameCode, playerName }: GameManagerProps) {
           </TabsContent>
 
           <TabsContent value="settlement" className="mt-6">
-            <ResultsSettlement results={results} playerNames={playerNames} />
+            <ResultsSettlement
+              results={results}
+              playerNames={playerNames}
+              settlementMode={settlementMode}
+              collectorPlayerId={collectorPlayerId}
+              players={state.players}
+              onUpdateSettlementMode={updateSettlementMode}
+              isUpdatingSettlementMode={isUpdatingSettlementMode}
+            />
           </TabsContent>
 
           <TabsContent value="log" className="mt-6">

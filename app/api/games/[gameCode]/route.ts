@@ -58,16 +58,18 @@ export async function GET(
       id: gameData.id,
       gameCode: gameData.gameCode,
       buyInAmount: gameData.buyInAmount,
+      settlementMode: gameData.settlementMode || "PEER_TO_PEER",
+      collectorPlayerId: gameData.collectorPlayerId || null,
       createdAt: toISOString(gameData.createdAt),
-      players: gameData.players.map((p) => ({
+      players: gameData.players.map((p: (typeof gameData.players)[0]) => ({
         id: p.id,
         gameId: p.gameId,
         sessionId: p.sessionId,
         name: p.name,
         createdAt: toISOString(p.createdAt),
       })),
-      buyIns: gameData.players.flatMap((p) =>
-        (p.buyIns || []).map((bi) => ({
+      buyIns: gameData.players.flatMap((p: (typeof gameData.players)[0]) =>
+        (p.buyIns || []).map((bi: (typeof p.buyIns)[0]) => ({
           id: bi.id,
           playerId: bi.playerId,
           amount: bi.amount,
@@ -75,8 +77,8 @@ export async function GET(
         }))
       ),
       finals: gameData.players
-        .filter((p) => p.final)
-        .map((p) => ({
+        .filter((p: (typeof gameData.players)[0]) => p.final)
+        .map((p: (typeof gameData.players)[0]) => ({
           id: p.final!.id,
           playerId: p.final!.playerId,
           amount: p.final!.amount,

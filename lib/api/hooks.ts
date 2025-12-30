@@ -15,6 +15,7 @@ import {
   getGameLogs,
   getUserNickname,
   updateUserNickname,
+  updateSettlementMode,
 } from "@/lib/api/client";
 import type {
   CreateGameRequest,
@@ -23,6 +24,7 @@ import type {
   UpdatePlayerRequest,
   AddBuyInRequest,
   UpdateFinalRequest,
+  UpdateSettlementModeRequest,
 } from "@/lib/api/schemas";
 
 /**
@@ -217,6 +219,21 @@ export function useUpdateUserNickname() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user", "nickname"] });
       queryClient.refetchQueries({ queryKey: ["user", "nickname"] });
+    },
+  });
+}
+
+/**
+ * Update settlement mode for a game
+ */
+export function useUpdateSettlementMode(gameCode: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (request: UpdateSettlementModeRequest) =>
+      updateSettlementMode(gameCode, request),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: gameKeys.detail(gameCode) });
     },
   });
 }

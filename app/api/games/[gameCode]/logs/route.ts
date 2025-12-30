@@ -55,16 +55,23 @@ export async function GET(
         });
 
         // Transform to response format
-        return fetchedLogs.map((log) => ({
+        return fetchedLogs.map((log: (typeof fetchedLogs)[0]) => ({
           id: log.id,
           gameId: log.gameId,
           action: log.action,
           playerId: log.playerId,
-          playerName: log.player?.name ?? null,
-          playerSessionId: log.player?.sessionId ?? null,
+          playerName:
+            log.player && !Array.isArray(log.player) ? log.player.name : null,
+          playerSessionId:
+            log.player && !Array.isArray(log.player)
+              ? log.player.sessionId
+              : null,
           actorSessionId: log.actorSessionId,
           actorPlayerId: log.actorPlayerId,
-          actorPlayerName: log.actorPlayer?.name ?? null,
+          actorPlayerName:
+            log.actorPlayer && !Array.isArray(log.actorPlayer)
+              ? log.actorPlayer.name
+              : null,
           metadata: log.metadata,
           createdAt: log.createdAt.toISOString(),
         }));

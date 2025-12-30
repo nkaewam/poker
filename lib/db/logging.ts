@@ -7,7 +7,8 @@ export type GameLogAction =
   | "player_name_updated"
   | "buyin_added"
   | "buyin_removed"
-  | "final_updated";
+  | "final_updated"
+  | "settlement_mode_updated";
 
 export interface GameLogMetadata {
   [key: string]: unknown;

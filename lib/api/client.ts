@@ -5,6 +5,7 @@ import {
   updatePlayerRequestSchema,
   addBuyInRequestSchema,
   updateFinalRequestSchema,
+  updateSettlementModeRequestSchema,
   gameResponseSchema,
   playerResponseSchema,
   buyInResponseSchema,
@@ -18,6 +19,7 @@ import {
   type UpdatePlayerRequest,
   type AddBuyInRequest,
   type UpdateFinalRequest,
+  type UpdateSettlementModeRequest,
   type GameResponse,
   type PlayerResponse,
   type BuyInResponse,
@@ -234,4 +236,23 @@ export async function updateUserNickname(
     body: JSON.stringify({ nickname }),
   });
   return data;
+}
+
+/**
+ * Update settlement mode for a game
+ */
+export async function updateSettlementMode(
+  gameCode: string,
+  request: UpdateSettlementModeRequest
+): Promise<GameResponse> {
+  const validatedCode = gameCodeSchema.parse(gameCode);
+  const validated = updateSettlementModeRequestSchema.parse(request);
+  const data = await fetchAPI<GameResponse>(
+    `/games/${validatedCode}/settlement`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(validated),
+    }
+  );
+  return gameResponseSchema.parse(data);
 }

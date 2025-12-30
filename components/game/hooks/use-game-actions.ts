@@ -5,9 +5,11 @@ import {
   useAddBuyIn,
   useRemoveBuyIn,
   useUpdateFinal,
+  useUpdateSettlementMode,
 } from "@/lib/api/hooks";
 import type { GameState } from "@/lib/storage";
 import type { GameResponse } from "@/lib/api/schemas";
+import type { UpdateSettlementModeRequest } from "@/lib/api/schemas";
 
 interface UseGameActionsProps {
   gameCode: string | undefined;
@@ -28,6 +30,7 @@ export function useGameActions({
   const addBuyInMutation = useAddBuyIn(gameCode || "");
   const removeBuyInMutation = useRemoveBuyIn(gameCode || "");
   const updateFinalMutation = useUpdateFinal(gameCode || "");
+  const updateSettlementModeMutation = useUpdateSettlementMode(gameCode || "");
 
   // Auto-add player when joining with a name (only if game exists and no players)
   useEffect(() => {
@@ -119,12 +122,21 @@ export function useGameActions({
     [gameCode, updateFinalMutation]
   );
 
+  const updateSettlementMode = useCallback(
+    (request: UpdateSettlementModeRequest) => {
+      if (!gameCode) return;
+      updateSettlementModeMutation.mutate(request);
+    },
+    [gameCode, updateSettlementModeMutation]
+  );
+
   return {
     updatePlayerName,
     addPlayer,
     addBuyIn,
     removeBuyIn,
     updateFinal,
+    updateSettlementMode,
     isUpdatingName: updatePlayerMutation.isPending,
     isAddingPlayer: addPlayerMutation.isPending,
     isAddingBuyIn: addBuyInMutation.isPending,
@@ -132,5 +144,6 @@ export function useGameActions({
     isRemovingBuyIn: removeBuyInMutation.isPending,
     removingBuyIn,
     isUpdatingFinal: updateFinalMutation.isPending,
+    isUpdatingSettlementMode: updateSettlementModeMutation.isPending,
   };
 }

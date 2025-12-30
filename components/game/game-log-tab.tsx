@@ -5,7 +5,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/format";
 import type { GameLogResponse } from "@/lib/api/schemas";
-import { PlayerIcon } from "@/components/game/player-icon";
+import { PlayerIconWithSession } from "@/components/game/player-icon-with-session";
 
 interface GameLogTabProps {
   gameCode: string;
@@ -216,8 +216,9 @@ export function GameLogTab({ gameCode }: GameLogTabProps) {
             <div className="flex items-center gap-2">
               {/* Actor avatar */}
               {log.actorPlayerId && (
-                <PlayerIcon
+                <PlayerIconWithSession
                   playerId={log.actorPlayerId}
+                  sessionId={log.actorSessionId}
                   size={24}
                   className="shrink-0"
                 />
@@ -225,8 +226,9 @@ export function GameLogTab({ gameCode }: GameLogTabProps) {
               <p className="text-sm flex-1">{formatLogMessage(log)}</p>
               {/* Target player avatar (if different from actor) */}
               {log.playerId && log.actorPlayerId !== log.playerId && (
-                <PlayerIcon
+                <PlayerIconWithSession
                   playerId={log.playerId}
+                  sessionId={log.playerSessionId}
                   size={24}
                   className="shrink-0"
                 />

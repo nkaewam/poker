@@ -18,6 +18,7 @@ import {
   updateSettlementMode,
   getUserIconPreferences,
   updateUserIconPreferences,
+  getUserIconPreferencesBySession,
 } from "@/lib/api/client";
 import type {
   CreateGameRequest,
@@ -272,6 +273,22 @@ export function useUpdateUserIconPreferences() {
     onSuccess: async () => {
       // Invalidate queries - this automatically triggers a refetch for active queries
       await queryClient.invalidateQueries({ queryKey: ["user", "icon"], refetchType: "active" });
+      // Also invalidate session icon queries since user preferences affect all sessions
+      await queryClient.invalidateQueries({ queryKey: ["user", "icon", "session"] });
     },
+  });
+}
+
+/**
+ * Get user icon preferences by sessionId
+ */
+export function useUserIconPreferencesBySession(sessionId: string | null) {
+  return useQuery({
+    queryKey: ["user", "icon", "session", sessionId],
+    queryFn: () => getUserIconPreferencesBySession(sessionId),
+    enabled: !!sessionId,
+    staleTime: 0, // Always consider data stale to ensure immediate updates
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 }

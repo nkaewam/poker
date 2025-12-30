@@ -9,7 +9,7 @@ import {
 import { formatCurrency } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { PlayerIcon } from "@/components/game/player-icon";
+import { PlayerIconWithSession } from "@/components/game/player-icon-with-session";
 import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
@@ -31,7 +31,7 @@ interface ResultsSettlementProps {
   playerNames: Record<string, string>;
   settlementMode: SettlementMode;
   collectorPlayerId: string | null;
-  players: Array<{ id: string; name: string }>;
+  players: Array<{ id: string; name: string; sessionId: string | null }>;
   onUpdateSettlementMode: (request: UpdateSettlementModeRequest) => void;
   isUpdatingSettlementMode?: boolean;
 }
@@ -144,6 +144,11 @@ export function ResultsSettlement({
       ? playerNames[collectorPlayerId]
       : null;
 
+  // Helper function to get sessionId for a playerId
+  const getSessionIdForPlayer = (playerId: string): string | null => {
+    return players.find((p) => p.id === playerId)?.sessionId ?? null;
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between text-lg font-bold">
@@ -212,8 +217,9 @@ export function ResultsSettlement({
                 <SelectValue placeholder="Select collector...">
                   {localCollectorId && (
                     <div className="flex items-center gap-2">
-                      <PlayerIcon
+                      <PlayerIconWithSession
                         playerId={localCollectorId}
+                        sessionId={getSessionIdForPlayer(localCollectorId)}
                         size={16}
                         className="shrink-0"
                       />
@@ -229,8 +235,9 @@ export function ResultsSettlement({
                 {players.map((player) => (
                   <SelectItem key={player.id} value={player.id}>
                     <div className="flex items-center gap-2">
-                      <PlayerIcon
+                      <PlayerIconWithSession
                         playerId={player.id}
+                        sessionId={player.sessionId}
                         size={16}
                         className="shrink-0"
                       />
@@ -274,14 +281,22 @@ export function ResultsSettlement({
               >
                 <div className="flex-1 flex items-center gap-2">
                   <div className="flex items-center gap-1.5">
-                    <PlayerIcon playerId={transfer.fromId} size={24} />
+                    <PlayerIconWithSession
+                      playerId={transfer.fromId}
+                      sessionId={getSessionIdForPlayer(transfer.fromId)}
+                      size={24}
+                    />
                     <span className="font-medium">
                       {playerNames[transfer.fromId]}
                     </span>
                   </div>
                   <span className="mx-2 text-muted-foreground">→</span>
                   <div className="flex items-center gap-1.5">
-                    <PlayerIcon playerId={transfer.toId} size={24} />
+                    <PlayerIconWithSession
+                      playerId={transfer.toId}
+                      sessionId={getSessionIdForPlayer(transfer.toId)}
+                      size={24}
+                    />
                     <span className="font-medium">
                       {playerNames[transfer.toId]}
                     </span>

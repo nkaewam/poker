@@ -46,6 +46,7 @@ export function FinalsTab({
                   key={player.id}
                   playerId={player.id}
                   playerName={player.name}
+                  sessionId={player.sessionId}
                   totalBuyIns={totalBuyIns}
                   value={final ?? null}
                   onChange={(value) => onUpdateFinal(player.id, value)}

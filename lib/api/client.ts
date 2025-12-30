@@ -290,3 +290,31 @@ export async function updateUserIconPreferences(request: {
   });
   return data;
 }
+
+/**
+ * Get user icon preferences by sessionId
+ */
+export async function getUserIconPreferencesBySession(
+  sessionId: string | null
+): Promise<{
+  patternType: string | null;
+  borderShape: string | null;
+  iconSeed: string | null;
+  iconColor: string | null;
+}> {
+  if (!sessionId) {
+    return {
+      patternType: null,
+      borderShape: null,
+      iconSeed: null,
+      iconColor: null,
+    };
+  }
+  const data = await fetchAPI<{
+    patternType: string | null;
+    borderShape: string | null;
+    iconSeed: string | null;
+    iconColor: string | null;
+  }>(`/user/icon/${sessionId}`);
+  return data;
+}

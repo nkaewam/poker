@@ -4,11 +4,12 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { formatCurrency, parseCurrency } from "@/lib/format";
-import { PlayerIcon } from "@/components/game/player-icon";
+import { PlayerIconWithSession } from "@/components/game/player-icon-with-session";
 
 interface FinalInputProps {
   playerId: string;
   playerName: string;
+  sessionId: string | null;
   totalBuyIns: number;
   value: number | null;
   onChange: (value: number | null) => void;
@@ -18,6 +19,7 @@ interface FinalInputProps {
 export function FinalInput({
   playerId,
   playerName,
+  sessionId,
   totalBuyIns,
   value,
   onChange,
@@ -41,7 +43,11 @@ export function FinalInput({
       <div className="mb-2">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
-            <PlayerIcon playerId={playerId} size={32} />
+            <PlayerIconWithSession
+              playerId={playerId}
+              sessionId={sessionId}
+              size={32}
+            />
             <span className="font-semibold">{playerName}</span>
           </div>
           <span className="text-xs text-muted-foreground flex items-center gap-2">

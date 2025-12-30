@@ -2,10 +2,15 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { games, players, finals } from "@/lib/db/schema";
 import { eq, sql, and } from "drizzle-orm";
-import { gameCodeSchema, updateFinalRequestSchema, finalResponseSchema } from "@/lib/api/schemas";
+import {
+  gameCodeSchema,
+  updateFinalRequestSchema,
+  finalResponseSchema,
+} from "@/lib/api/schemas";
 import { z } from "zod";
 import { getOrCreateSession } from "@/lib/auth";
 import { createGameLog } from "@/lib/db/logging";
+import { invalidateGameCache } from "@/lib/cache/utils";
 
 const playerIdSchema = z.string().uuid();
 
@@ -26,10 +31,7 @@ export async function PATCH(
     });
 
     if (!game) {
-      return NextResponse.json(
-        { error: "Game not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Game not found" }, { status: 404 });
     }
 
     // Verify player exists and belongs to game
@@ -41,10 +43,7 @@ export async function PATCH(
     });
 
     if (!player) {
-      return NextResponse.json(
-        { error: "Player not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Player not found" }, { status: 404 });
     }
 
     // Upsert final (insert or update)
@@ -95,6 +94,11 @@ export async function PATCH(
       },
     });
 
+    // Invalidate game cache (fire-and-forget to avoid blocking response)
+    invalidateGameCache(validatedGameCode).catch((error) => {
+      console.error("Failed to invalidate cache:", error);
+    });
+
     return NextResponse.json(
       finalResponseSchema.parse({
         id: final.id,
@@ -117,4 +121,3 @@ export async function PATCH(
     );
   }
 }
-

@@ -3,6 +3,18 @@ import { db } from "@/lib/db";
 import { games } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { gameCodeSchema, gameResponseSchema } from "@/lib/api/schemas";
+import { getCached } from "@/lib/cache/utils";
+
+/**
+ * Safely convert a date to ISO string format.
+ * Handles both Date objects (from database) and strings (from cache).
+ */
+function toISOString(date: Date | string): string {
+  if (typeof date === "string") {
+    return date;
+  }
+  return date.toISOString();
+}
 
 export async function GET(
   request: Request,
@@ -11,25 +23,34 @@ export async function GET(
   try {
     const { gameCode } = await params;
     const validatedGameCode = gameCodeSchema.parse(gameCode);
+    const cacheKey = `game:${validatedGameCode.toUpperCase()}`;
 
-    // Find game by code (case-insensitive)
-    const gameData = await db.query.games.findFirst({
-      where: sql`UPPER(${games.gameCode}) = UPPER(${validatedGameCode})`,
-      with: {
-        players: {
+    // Get game data from cache or database
+    const gameData = await getCached(
+      cacheKey,
+      2, // 2 second TTL for game data
+      async () => {
+        return await db.query.games.findFirst({
+          where: sql`UPPER(${games.gameCode}) = UPPER(${validatedGameCode})`,
           with: {
-            buyIns: true,
-            final: true,
+            players: {
+              with: {
+                buyIns: true,
+                final: true,
+              },
+            },
           },
-        },
+        });
       },
-    });
+      {
+        // Cache 404s with very short TTL (1 second) to handle race conditions
+        cacheNotFound: true,
+        notFoundTtl: 1,
+      }
+    );
 
     if (!gameData) {
-      return NextResponse.json(
-        { error: "Game not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Game not found" }, { status: 404 });
     }
 
     // Transform to response format
@@ -37,20 +58,20 @@ export async function GET(
       id: gameData.id,
       gameCode: gameData.gameCode,
       buyInAmount: gameData.buyInAmount,
-      createdAt: gameData.createdAt.toISOString(),
+      createdAt: toISOString(gameData.createdAt),
       players: gameData.players.map((p) => ({
         id: p.id,
         gameId: p.gameId,
         sessionId: p.sessionId,
         name: p.name,
-        createdAt: p.createdAt.toISOString(),
+        createdAt: toISOString(p.createdAt),
       })),
       buyIns: gameData.players.flatMap((p) =>
         (p.buyIns || []).map((bi) => ({
           id: bi.id,
           playerId: bi.playerId,
           amount: bi.amount,
-          createdAt: bi.createdAt.toISOString(),
+          createdAt: toISOString(bi.createdAt),
         }))
       ),
       finals: gameData.players
@@ -59,7 +80,7 @@ export async function GET(
           id: p.final!.id,
           playerId: p.final!.playerId,
           amount: p.final!.amount,
-          createdAt: p.final!.createdAt.toISOString(),
+          createdAt: toISOString(p.final!.createdAt),
         })),
     };
 
@@ -72,10 +93,6 @@ export async function GET(
       );
     }
     console.error("Error getting game:", error);
-    return NextResponse.json(
-      { error: "Failed to get game" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to get game" }, { status: 500 });
   }
 }
-

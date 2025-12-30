@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { user } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { getCached, deleteCache } from "@/lib/cache/utils";
 
 const updateNicknameSchema = z.object({
   nickname: z
@@ -25,14 +26,24 @@ export async function GET() {
       return NextResponse.json({ nickname: null });
     }
 
-    const userData = await db.query.user.findFirst({
-      where: eq(user.id, session.user.id),
-      columns: {
-        nickname: true,
-      },
-    });
+    const cacheKey = `user:${session.user.id}:nickname`;
 
-    return NextResponse.json({ nickname: userData?.nickname || null });
+    // Get nickname from cache or database
+    const nickname = await getCached(
+      cacheKey,
+      5 * 60, // 5 minute TTL
+      async () => {
+        const userData = await db.query.user.findFirst({
+          where: eq(user.id, session.user.id),
+          columns: {
+            nickname: true,
+          },
+        });
+        return userData?.nickname || null;
+      }
+    );
+
+    return NextResponse.json({ nickname });
   } catch (error) {
     console.error("Error getting nickname:", error);
     return NextResponse.json({ nickname: null });
@@ -57,6 +68,10 @@ export async function POST(request: Request) {
     const validated = updateNicknameSchema.parse(body);
 
     await updateUserNickname(session.user.id, validated.nickname);
+
+    // Invalidate nickname cache
+    const cacheKey = `user:${session.user.id}:nickname`;
+    await deleteCache(cacheKey);
 
     return NextResponse.json({ success: true });
   } catch (error) {

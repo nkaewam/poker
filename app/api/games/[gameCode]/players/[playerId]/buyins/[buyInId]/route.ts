@@ -6,6 +6,7 @@ import { gameCodeSchema } from "@/lib/api/schemas";
 import { z } from "zod";
 import { getOrCreateSession } from "@/lib/auth";
 import { createGameLog } from "@/lib/db/logging";
+import { invalidateGameCache } from "@/lib/cache/utils";
 
 const playerIdSchema = z.string().uuid();
 const buyInIdSchema = z.string().uuid();
@@ -95,6 +96,11 @@ export async function DELETE(
         buyInId: validatedBuyInId,
         amount: parseFloat(deletedBuyIn.amount),
       },
+    });
+
+    // Invalidate game cache (fire-and-forget to avoid blocking response)
+    invalidateGameCache(validatedGameCode).catch((error) => {
+      console.error("Failed to invalidate cache:", error);
     });
 
     return NextResponse.json({ success: true });

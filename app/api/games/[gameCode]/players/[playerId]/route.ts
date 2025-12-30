@@ -6,6 +6,7 @@ import { gameCodeSchema, updatePlayerRequestSchema, playerResponseSchema } from 
 import { z } from "zod";
 import { getOrCreateSession } from "@/lib/auth";
 import { createGameLog } from "@/lib/db/logging";
+import { invalidateGameCache } from "@/lib/cache/utils";
 
 const playerIdSchema = z.string().uuid();
 
@@ -83,6 +84,11 @@ export async function PATCH(
         oldName,
         newName: validated.name,
       },
+    });
+
+    // Invalidate game cache (fire-and-forget to avoid blocking response)
+    invalidateGameCache(validatedGameCode).catch((error) => {
+      console.error("Failed to invalidate cache:", error);
     });
 
     return NextResponse.json(

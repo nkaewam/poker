@@ -6,6 +6,8 @@ import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { session } from "@/lib/db/schema";
 import { eq, and, gt } from "drizzle-orm";
+import { getCached } from "@/lib/cache/utils";
+import { cookies } from "next/headers";
 
 /**
  * Get session - prefers better-auth session for signed-in users,
@@ -59,14 +61,28 @@ async function getSession() {
 
 export async function GET() {
   try {
-    const session = await getSession();
+    // Try to get session token from cookie for cache key
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get("poker_session")?.value;
+    const cacheKey = sessionToken
+      ? `session:${sessionToken}`
+      : `session:anonymous:${Date.now()}`; // Fallback for new sessions
+
+    // Get session from cache or database
+    const sessionData = await getCached(
+      cacheKey,
+      30, // 30 second TTL for session data
+      async () => {
+        return await getSession();
+      }
+    );
     
     return NextResponse.json(
       sessionResponseSchema.parse({
-        id: session.id,
-        token: session.token,
-        createdAt: session.createdAt.toISOString(),
-        expiresAt: session.expiresAt.toISOString(),
+        id: sessionData.id,
+        token: sessionData.token,
+        createdAt: sessionData.createdAt.toISOString(),
+        expiresAt: sessionData.expiresAt.toISOString(),
       })
     );
   } catch (error) {

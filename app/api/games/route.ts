@@ -5,6 +5,7 @@ import { getOrCreateSession } from "@/lib/auth";
 import { createGameRequestSchema, gameResponseSchema } from "@/lib/api/schemas";
 import { generateUniqueGameCode } from "@/lib/utils/game-code";
 import { createGameLog } from "@/lib/db/logging";
+import { setCache } from "@/lib/cache/utils";
 
 export async function POST(request: Request) {
   try {
@@ -110,7 +111,13 @@ export async function POST(request: Request) {
         })),
     };
 
-    return NextResponse.json(gameResponseSchema.parse(response));
+    const validatedResponse = gameResponseSchema.parse(response);
+
+    // Warm the cache with the newly created game data
+    const cacheKey = `game:${gameCode.toUpperCase()}`;
+    await setCache(cacheKey, gameData, 2); // 2 second TTL
+
+    return NextResponse.json(validatedResponse);
   } catch (error) {
     console.error("Error creating game:", error);
     if (error instanceof Error && error.name === "ZodError") {

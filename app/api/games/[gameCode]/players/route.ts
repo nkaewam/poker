@@ -9,6 +9,7 @@ import {
   playerResponseSchema,
 } from "@/lib/api/schemas";
 import { createGameLog } from "@/lib/db/logging";
+import { invalidateGameCache } from "@/lib/cache/utils";
 
 export async function POST(
   request: Request,
@@ -79,6 +80,11 @@ export async function POST(
       metadata: {
         playerName: validated.name,
       },
+    });
+
+    // Invalidate game cache (fire-and-forget to avoid blocking response)
+    invalidateGameCache(validatedGameCode).catch((error) => {
+      console.error("Failed to invalidate cache:", error);
     });
 
     return NextResponse.json(

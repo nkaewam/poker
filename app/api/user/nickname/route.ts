@@ -161,7 +161,7 @@ export async function POST(request: Request) {
             gameId: player.gameId,
             action: "player_name_updated",
             playerId: player.id,
-            actorSessionId: player.sessionId,
+            actorSessionId: player.sessionId ?? undefined,
             actorPlayerId: player.id,
             metadata: {
               oldName: oldNickname?.nickname || player.name,

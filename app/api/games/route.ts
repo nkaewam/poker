@@ -6,6 +6,7 @@ import { createGameRequestSchema, gameResponseSchema } from "@/lib/api/schemas";
 import { generateUniqueGameCode } from "@/lib/utils/game-code";
 import { createGameLog } from "@/lib/db/logging";
 import { setCache } from "@/lib/cache/utils";
+import { sql } from "drizzle-orm";
 
 export async function POST(request: Request) {
   try {
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
 
     // Create game and first player in a transaction
     const settlementMode = validated.settlementMode || "PEER_TO_PEER";
-    
+
     const [game] = await db
       .insert(games)
       .values({
@@ -46,18 +47,21 @@ export async function POST(request: Request) {
     if (settlementMode === "COLLECTOR") {
       if (collectorPlayerId && collectorPlayerId !== player.id) {
         return NextResponse.json(
-          { error: "Collector player ID must be the game creator at creation time" },
+          {
+            error:
+              "Collector player ID must be the game creator at creation time",
+          },
           { status: 400 }
         );
       }
       // Default to creator if not specified
       collectorPlayerId = collectorPlayerId || player.id;
-      
+
       // Update game with collector player ID
       await db
         .update(games)
         .set({ collectorPlayerId })
-        .where((games, { eq }) => eq(games.id, game.id));
+        .where(sql`${games.id} = ${game.id}`);
     }
 
     // Log game creation (fire-and-forget)
@@ -132,24 +136,27 @@ export async function POST(request: Request) {
       settlementMode: updatedGameData.settlementMode,
       collectorPlayerId: updatedGameData.collectorPlayerId,
       createdAt: updatedGameData.createdAt.toISOString(),
-      players: updatedGameData.players.map((p) => ({
-        id: p.id,
-        gameId: p.gameId,
-        sessionId: p.sessionId,
-        name: p.name,
-        createdAt: p.createdAt.toISOString(),
-      })),
-      buyIns: updatedGameData.players.flatMap((p) =>
-        (p.buyIns || []).map((bi) => ({
-          id: bi.id,
-          playerId: bi.playerId,
-          amount: bi.amount,
-          createdAt: bi.createdAt.toISOString(),
-        }))
+      players: updatedGameData.players.map(
+        (p: (typeof updatedGameData.players)[0]) => ({
+          id: p.id,
+          gameId: p.gameId,
+          sessionId: p.sessionId,
+          name: p.name,
+          createdAt: p.createdAt.toISOString(),
+        })
+      ),
+      buyIns: updatedGameData.players.flatMap(
+        (p: (typeof updatedGameData.players)[0]) =>
+          (p.buyIns || []).map((bi: (typeof p.buyIns)[0]) => ({
+            id: bi.id,
+            playerId: bi.playerId,
+            amount: bi.amount,
+            createdAt: bi.createdAt.toISOString(),
+          }))
       ),
       finals: updatedGameData.players
-        .filter((p) => p.final)
-        .map((p) => ({
+        .filter((p: (typeof updatedGameData.players)[0]) => p.final)
+        .map((p: (typeof updatedGameData.players)[0]) => ({
           id: p.final!.id,
           playerId: p.final!.playerId,
           amount: p.final!.amount,

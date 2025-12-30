@@ -23,9 +23,7 @@ export const games = pgTable(
     settlementMode: varchar("settlement_mode", { length: 20 })
       .notNull()
       .default("PEER_TO_PEER"),
-    collectorPlayerId: uuid("collector_player_id").references(() => players.id, {
-      onDelete: "set null",
-    }),
+    collectorPlayerId: uuid("collector_player_id"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => ({

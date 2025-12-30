@@ -48,9 +48,13 @@ export async function PATCH(
     }
 
     // Validate collector player exists in game if mode is COLLECTOR
-    if (validated.settlementMode === "COLLECTOR" && validated.collectorPlayerId) {
+    if (
+      validated.settlementMode === "COLLECTOR" &&
+      validated.collectorPlayerId
+    ) {
       const collectorExists = game.players.some(
-        (p) => p.id === validated.collectorPlayerId
+        (p: (typeof game.players)[0]) => (p: (typeof game.players)[0]) =>
+          p.id === validated.collectorPlayerId
       );
       if (!collectorExists) {
         return NextResponse.json(
@@ -84,7 +88,9 @@ export async function PATCH(
     await invalidateGameCache(validatedGameCode);
 
     // Log settlement mode change
-    const actorPlayer = game.players.find((p) => p.sessionId === session.id);
+    const actorPlayer = game.players.find(
+      (p: (typeof game.players)[0]) => p.sessionId === session.id
+    );
     createGameLog({
       gameId: game.id,
       action: "settlement_mode_updated",
@@ -94,7 +100,10 @@ export async function PATCH(
         settlementMode: validated.settlementMode,
         collectorPlayerId: validated.collectorPlayerId,
         collectorPlayerName: validated.collectorPlayerId
-          ? game.players.find((p) => p.id === validated.collectorPlayerId)?.name
+          ? game.players.find(
+              (p: (typeof game.players)[0]) =>
+                p.id === validated.collectorPlayerId
+            )?.name
           : null,
       },
     });
@@ -127,15 +136,15 @@ export async function PATCH(
       settlementMode: gameData.settlementMode || "PEER_TO_PEER",
       collectorPlayerId: gameData.collectorPlayerId || null,
       createdAt: toISOString(gameData.createdAt),
-      players: gameData.players.map((p: typeof gameData.players[0]) => ({
+      players: gameData.players.map((p: (typeof gameData.players)[0]) => ({
         id: p.id,
         gameId: p.gameId,
         sessionId: p.sessionId,
         name: p.name,
         createdAt: toISOString(p.createdAt),
       })),
-      buyIns: gameData.players.flatMap((p: typeof gameData.players[0]) =>
-        (p.buyIns || []).map((bi: typeof p.buyIns[0]) => ({
+      buyIns: gameData.players.flatMap((p: (typeof gameData.players)[0]) =>
+        (p.buyIns || []).map((bi: (typeof p.buyIns)[0]) => ({
           id: bi.id,
           playerId: bi.playerId,
           amount: bi.amount,
@@ -143,8 +152,8 @@ export async function PATCH(
         }))
       ),
       finals: gameData.players
-        .filter((p: typeof gameData.players[0]) => p.final)
-        .map((p: typeof gameData.players[0]) => ({
+        .filter((p: (typeof gameData.players)[0]) => p.final)
+        .map((p: (typeof gameData.players)[0]) => ({
           id: p.final!.id,
           playerId: p.final!.playerId,
           amount: p.final!.amount,

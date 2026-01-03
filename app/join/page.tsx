@@ -27,7 +27,11 @@ import {
   useUserNickname,
 } from "@/lib/api/hooks";
 import { Spinner } from "@/components/ui/spinner";
-import { authClient } from "@/components/auth/auth-provider";
+import { useAuth } from "@/components/auth/use-auth";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { useQuery } from "@tanstack/react-query";
+import { getCurrentGames } from "@/lib/api/client";
+import { formatCurrency, formatRelativeTime } from "@/lib/format";
 
 const joinFormSchema = z.object({
   gameCode: z
@@ -49,11 +53,15 @@ function JoinGameForm() {
   const joinGameMutation = useJoinGame();
   const { data: lastPlayerNameData } = useLastPlayerName();
   const { data: nicknameData } = useUserNickname();
-  const session = authClient.useSession();
-
-  const isAuthenticated = !!session.data?.user;
+  const { isAuthenticated } = useAuth();
   const hasNickname = !!nicknameData?.nickname;
   const shouldSkipNicknameInput = isAuthenticated && hasNickname;
+
+  const { data: currentGamesData } = useQuery({
+    queryKey: ["current-games"],
+    queryFn: getCurrentGames,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
   const gameCodeParam = searchParams.get("game-code");
 
@@ -110,7 +118,42 @@ function JoinGameForm() {
   };
 
   return (
-    <div className="flex-1 flex items-center justify-center p-4">
+    <Dialog
+      open={
+        currentGamesData &&
+        currentGamesData.length > 0 &&
+        !form.formState.isDirty
+      }
+      modal={false}
+    >
+      <DialogContent position="br" className="p-4" size="sm">
+        <DialogTitle>Join existing game</DialogTitle>
+        <div className="flex flex-col gap-2">
+          {currentGamesData?.map((game) => (
+            <Button
+              variant="outline"
+              key={game.id}
+              className="items-start flex-col h-auto gap-1"
+              onClick={() => {
+                form.setValue("gameCode", game.gameCode);
+              }}
+            >
+              <p className="font-bold">{game.gameCode}</p>
+              <div className="flex items-center justify-between w-full">
+                {game.buyInAmount && (
+                  <p className="text-sm text-muted-foreground">
+                    Buy-ins: {formatCurrency(+game.buyInAmount)}
+                  </p>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  Created {formatRelativeTime(game.createdAt.toString())}
+                </p>
+              </div>
+            </Button>
+          ))}
+        </div>
+      </DialogContent>
+      <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center space-y-2">
             <h1 className="text-2xl font-bold">Join Game</h1>
@@ -209,6 +252,7 @@ function JoinGameForm() {
           </Form>
         </div>
       </div>
+    </Dialog>
   );
 }
 

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { authClient } from "@/components/auth/auth-provider";
+import { useAuth } from "@/components/auth/use-auth";
 import {
   Trophy,
   TrendingUp,
@@ -79,8 +79,7 @@ function formatDate(dateString: string): string {
 }
 
 export default function StatsPage() {
-  const session = authClient.useSession();
-  const isAuthenticated = !!session.data?.user;
+  const { isAuthenticated } = useAuth();
 
   return (
     <>

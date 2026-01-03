@@ -11,7 +11,7 @@ import { PlayerIcon } from "@/components/game/player-icon";
 import { UserIcon } from "@/components/auth/user-icon";
 import { isGuestPlayer } from "@/lib/utils/player-utils";
 import { useSession } from "@/lib/api/hooks";
-import { authClient } from "@/components/auth/auth-provider";
+import { useAuth } from "@/components/auth/use-auth";
 import type { GameState } from "@/lib/storage";
 import { TrashIcon } from "lucide-react";
 
@@ -43,7 +43,7 @@ export function PlayerWithBuyIns({
   removingBuyIn,
 }: PlayerWithBuyInsProps) {
   const { data: session } = useSession();
-  const authSession = authClient.useSession();
+  const { user } = useAuth();
   const isGuest = isGuestPlayer(player.id, gameState);
   const [isEditingName, setIsEditingName] = useState(false);
   const [name, setName] = useState(player.name);
@@ -51,8 +51,7 @@ export function PlayerWithBuyIns({
 
   // Check if this player belongs to the current authenticated user
   // Use UserIcon if the player's session matches the current session AND user is authenticated
-  const isCurrentUser =
-    authSession.data?.user && player.sessionId === session?.id;
+  const isCurrentUser = user && player.sessionId === session?.id;
 
   // Check if the current user can edit this player's name (only for guest players created by the current user, not authenticated players)
   const canEditName = isGuest && player.sessionId === session?.id;
@@ -142,8 +141,8 @@ export function PlayerWithBuyIns({
           </>
         ) : (
           <>
-            {isCurrentUser && authSession.data?.user ? (
-              <UserIcon userId={authSession.data.user.id} size={40} />
+            {isCurrentUser && user ? (
+              <UserIcon userId={user.id} size={40} />
             ) : (
               <PlayerIcon playerId={player.id} size={40} />
             )}

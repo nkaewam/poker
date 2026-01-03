@@ -2,7 +2,7 @@
 
 import { PlayerIcon } from "@/components/game/player-icon";
 import { useUserIconPreferences, useUserIconPreferencesBySession, useSession } from "@/lib/api/hooks";
-import { authClient } from "@/components/auth/auth-provider";
+import { useAuth } from "@/components/auth/use-auth";
 import { cn } from "@/lib/utils";
 import type { IconPattern } from "@/lib/utils/icon-pattern";
 import type { BorderShape } from "@/components/game/player-icon";
@@ -26,11 +26,11 @@ export function PlayerIconWithSession({
   className,
 }: PlayerIconWithSessionProps) {
   const { data: currentSession } = useSession();
-  const authSession = authClient.useSession();
+  const { user } = useAuth();
   
   // Check if this player belongs to the current authenticated user
   const isCurrentUser =
-    authSession.data?.user && sessionId === currentSession?.id;
+    user && sessionId === currentSession?.id;
 
   // Use current user's preferences if this player belongs to them, otherwise use player's session preferences
   const { data: iconPreferences, dataUpdatedAt } = isCurrentUser

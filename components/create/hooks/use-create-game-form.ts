@@ -8,7 +8,7 @@ import {
   useLastPlayerName,
   useUserNickname,
 } from "@/lib/api/hooks";
-import { authClient } from "@/components/auth/auth-provider";
+import { useAuth } from "@/components/auth/use-auth";
 
 export const createGameSchema = z.object({
   playerName: z
@@ -33,9 +33,7 @@ export function useCreateGameForm() {
   const createGameMutation = useCreateGame();
   const { data: lastPlayerNameData } = useLastPlayerName();
   const { data: nicknameData } = useUserNickname();
-  const session = authClient.useSession();
-
-  const isAuthenticated = !!session.data?.user;
+  const { isAuthenticated } = useAuth();
   const hasNickname = !!nicknameData?.nickname;
   const shouldSkipNicknameInput = isAuthenticated && hasNickname;
 

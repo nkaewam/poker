@@ -17,7 +17,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/spinner";
-import { authClient } from "@/components/auth/auth-provider";
+import { useAuth } from "@/components/auth/use-auth";
 
 const nicknameSchema = z.object({
   nickname: z
@@ -32,7 +32,7 @@ type NicknameFormValues = z.infer<typeof nicknameSchema>;
 export default function OnboardingPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const session = authClient.useSession();
+  const { session, user, isPending } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<NicknameFormValues>({
@@ -44,13 +44,13 @@ export default function OnboardingPage() {
 
   // Redirect if not authenticated
   useEffect(() => {
-    if (!session.isPending && !session.data?.user) {
+    if (!isPending && !user) {
       router.push("/");
     }
-  }, [session, router]);
+  }, [isPending, user, router]);
 
   const handleSubmit = async (data: NicknameFormValues) => {
-    if (!session.data?.user) {
+    if (!user) {
       return;
     }
 
@@ -85,7 +85,7 @@ export default function OnboardingPage() {
     }
   };
 
-  if (session.isPending) {
+  if (isPending) {
     return (
       <div className="flex-1 flex items-center justify-center p-4">
         <Spinner />
@@ -93,7 +93,7 @@ export default function OnboardingPage() {
     );
   }
 
-  if (!session.data?.user) {
+  if (!user) {
     return null;
   }
 

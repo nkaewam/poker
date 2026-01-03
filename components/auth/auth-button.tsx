@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/components/auth/auth-provider";
+import { useAuth } from "@/components/auth/use-auth";
 import {
   useUserNickname,
   useUpdateUserNickname,
@@ -300,7 +301,7 @@ function BorderShapePreview({
 }
 
 export function AuthButton() {
-  const session = authClient.useSession();
+  const { session } = useAuth();
   const router = useRouter();
   const { data: nicknameData } = useUserNickname();
   const { data: iconPreferences } = useUserIconPreferences();
@@ -386,9 +387,9 @@ export function AuthButton() {
       <>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="gap-2 py-2">
+            <Button variant="ghost" size="sm" className="gap-2 py-2 pl-1">
               <div className="flex items-center gap-2">
-                <UserIcon userId={user.id} size={30} />
+                <UserIcon userId={user.id} size={34} />
                 <span className="text-sm leading-none hidden sm:block">
                   {displayName}
                 </span>

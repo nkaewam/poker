@@ -6,7 +6,31 @@ import { createGameRequestSchema, gameResponseSchema } from "@/lib/api/schemas";
 import { generateUniqueGameCode } from "@/lib/utils/game-code";
 import { createGameLog } from "@/lib/db/logging";
 import { setCache } from "@/lib/cache/utils";
-import { sql } from "drizzle-orm";
+import { and, desc, eq, gte, lt, sql } from "drizzle-orm";
+
+// New feature: get today's list of games
+export async function GET(request: Request) {
+  try {
+    const today = new Date().toISOString().split("T")[0];
+    const todayGames = await db.query.games.findMany({
+      where: and(
+        gte(games.createdAt, new Date(today)),
+        lt(
+          games.createdAt,
+          new Date(new Date(today).setDate(new Date(today).getDate() + 1))
+        )
+      ),
+      orderBy: [desc(games.createdAt)],
+    });
+    return NextResponse.json(todayGames);
+  } catch (error) {
+    console.error("Error getting today's games:", error);
+    return NextResponse.json(
+      { error: "Failed to get today's games" },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(request: Request) {
   try {

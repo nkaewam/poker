@@ -30,11 +30,13 @@ async function getSession() {
     const betterAuthResponse = await auth.api.getSession({
       headers: await headers(),
     });
-    
+
     // Better-auth returns { user, session } or null
     if (betterAuthResponse?.session) {
       const sessionId = betterAuthResponse.session.id;
-      
+
+      console.log("sessionId", sessionId);
+
       // Query the database to get the full session record
       const sessionData = await db.query.session.findFirst({
         where: and(
@@ -42,7 +44,7 @@ async function getSession() {
           gt(session.expiresAt, new Date())
         ),
       });
-      
+
       if (sessionData) {
         return {
           id: sessionData.id,
@@ -59,7 +61,7 @@ async function getSession() {
       console.error("Error getting better-auth session:", error);
     }
   }
-  
+
   // Fall back to anonymous session
   const anonymousSession = await getOrCreateSession();
   return {
@@ -80,14 +82,8 @@ export async function GET() {
       : `session:anonymous:${Date.now()}`; // Fallback for new sessions
 
     // Get session from cache or database
-    const sessionData = await getCached(
-      cacheKey,
-      30, // 30 second TTL for session data
-      async () => {
-        return await getSession();
-      }
-    );
-    
+    const sessionData = await getCached(cacheKey, 30, getSession);
+
     return NextResponse.json(
       sessionResponseSchema.parse({
         id: sessionData.id,
@@ -108,7 +104,7 @@ export async function GET() {
 export async function POST() {
   try {
     const session = await getSession();
-    
+
     return NextResponse.json(
       sessionResponseSchema.parse({
         id: session.id,
@@ -125,4 +121,3 @@ export async function POST() {
     );
   }
 }
-

@@ -83,8 +83,6 @@ export async function joinGame(
   request: JoinGameRequest
 ): Promise<GameResponse> {
   const validated = joinGameRequestSchema.parse(request);
-  // First ensure session exists
-  await fetchAPI("/auth/session", { method: "POST" });
 
   // Verify game exists first
   await getGame(validated.gameCode);
@@ -280,7 +278,13 @@ export async function getUserIconPreferences(): Promise<{
  */
 export async function updateUserIconPreferences(request: {
   patternType?: "grid" | "dots" | "lines" | "shapes";
-  borderShape?: "wavy" | "zigzag" | "scalloped" | "spiked" | "rounded" | "smooth";
+  borderShape?:
+    | "wavy"
+    | "zigzag"
+    | "scalloped"
+    | "spiked"
+    | "rounded"
+    | "smooth";
   iconSeed?: string;
   iconColor?: string;
 }): Promise<{ success: boolean }> {
@@ -316,5 +320,13 @@ export async function getUserIconPreferencesBySession(
     iconSeed: string | null;
     iconColor: string | null;
   }>(`/user/icon/${sessionId}`);
+  return data;
+}
+
+/**
+ * Get the current games
+ */
+export async function getCurrentGames(): Promise<GameResponse[]> {
+  const data = await fetchAPI<GameResponse[]>("/games");
   return data;
 }

@@ -2,24 +2,24 @@
 
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { authClient } from "@/components/auth/auth-provider";
+import { useAuth } from "@/components/auth/use-auth";
 import { useUserNickname } from "@/lib/api/hooks";
 
 export function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const session = authClient.useSession();
+  const { user, isPending } = useAuth();
   const { data: nicknameData, isPending: isNicknamePending } =
     useUserNickname();
 
   useEffect(() => {
     // Don't redirect if still loading or on auth/onboarding pages
-    if (session.isPending || isNicknamePending) {
+    if (isPending || isNicknamePending) {
       return;
     }
 
     // If user is authenticated
-    if (session.data?.user) {
+    if (user) {
       // Check if they need onboarding
       if (!nicknameData?.nickname && pathname !== "/onboarding") {
         router.push("/onboarding");
@@ -32,10 +32,10 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
         return;
       }
     }
-  }, [session, nicknameData, pathname, router, isNicknamePending]);
+  }, [user, nicknameData, pathname, router, isPending, isNicknamePending]);
 
   // Show loading state while checking
-  if (session.isPending || isNicknamePending) {
+  if (isPending || isNicknamePending) {
     return null; // Or a loading spinner
   }
 

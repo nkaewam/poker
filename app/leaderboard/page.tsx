@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { authClient } from "@/components/auth/auth-provider";
+import { useAuth } from "@/components/auth/use-auth";
 import { Trophy, TrendingUp, TrendingDown, BarChart3 } from "lucide-react";
 
 interface LeaderboardEntry {
@@ -132,17 +132,10 @@ function formatPercentage(value: number): string {
 }
 
 export default function LeaderboardPage() {
-  const session = authClient.useSession();
-  const isAuthenticated = !!session.data?.user;
+  const { isAuthenticated } = useAuth();
 
   return (
     <>
-      <div className="flex justify-start items-center p-4">
-        <Button variant="ghost" asChild>
-          <Link href="/">← Back</Link>
-        </Button>
-      </div>
-
       <div className="flex-1 p-4 pb-8">
         <div className="mx-auto max-w-4xl space-y-6">
           <div className="text-center space-y-2">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, Suspense } from "react";
+import { useEffect, Suspense, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -29,9 +29,16 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { useAuth } from "@/components/auth/use-auth";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { useQuery } from "@tanstack/react-query";
 import { getCurrentGames } from "@/lib/api/client";
 import { formatCurrency, formatRelativeTime } from "@/lib/format";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 const joinFormSchema = z.object({
   gameCode: z
@@ -56,6 +63,7 @@ function JoinGameForm() {
   const { isAuthenticated } = useAuth();
   const hasNickname = !!nicknameData?.nickname;
   const shouldSkipNicknameInput = isAuthenticated && hasNickname;
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const { data: currentGamesData } = useQuery({
     queryKey: ["current-games"],
@@ -64,6 +72,7 @@ function JoinGameForm() {
   });
 
   const gameCodeParam = searchParams.get("game-code");
+  const hasInitialized = useRef(false);
 
   const form = useForm<JoinFormValues>({
     resolver: zodResolver(joinFormSchema),
@@ -73,33 +82,69 @@ function JoinGameForm() {
     },
   });
 
-  // Prefill name: prioritize nickname, then last player name
+  // Initialize form values from async data (use reset to avoid marking form as dirty)
   useEffect(() => {
-    // If authenticated with nickname, always use nickname (even if user typed something)
-    if (shouldSkipNicknameInput && nicknameData?.nickname) {
-      form.setValue("playerName", nicknameData.nickname);
+    // Skip if already initialized or form has been touched by user
+    if (hasInitialized.current || form.formState.isDirty) {
       return;
     }
 
-    const currentValue = form.getValues("playerName");
-    if (currentValue) return; // Don't overwrite if user has typed something
+    let gameCode = form.getValues("gameCode");
+    let playerName = form.getValues("playerName");
 
-    if (nicknameData?.nickname) {
-      form.setValue("playerName", nicknameData.nickname);
-    } else if (lastPlayerNameData?.name) {
-      form.setValue("playerName", lastPlayerNameData.name);
-    }
-  }, [nicknameData, lastPlayerNameData, form, shouldSkipNicknameInput]);
-
-  // Prefill game code from query param
-  useEffect(() => {
+    // Update game code from query param if needed
     if (gameCodeParam) {
       const upperCode = gameCodeParam.toUpperCase().replace(/[^A-Z0-9]/g, "");
       if (upperCode.length <= 5) {
-        form.setValue("gameCode", upperCode);
+        gameCode = upperCode;
       }
     }
-  }, [gameCodeParam, form]);
+
+    // Update player name: prioritize nickname, then last player name
+    if (shouldSkipNicknameInput && nicknameData?.nickname) {
+      playerName = nicknameData.nickname;
+    } else if (!playerName) {
+      // Only prefill if playerName is empty (user hasn't typed)
+      if (nicknameData?.nickname) {
+        playerName = nicknameData.nickname;
+      } else if (lastPlayerNameData?.name) {
+        playerName = lastPlayerNameData.name;
+      }
+    }
+
+    // Reset form with all values at once to avoid marking as dirty
+    if (
+      gameCode !== form.getValues("gameCode") ||
+      playerName !== form.getValues("playerName")
+    ) {
+      form.reset({
+        gameCode,
+        playerName,
+      });
+      hasInitialized.current = true;
+    }
+  }, [
+    gameCodeParam,
+    nicknameData,
+    lastPlayerNameData,
+    form,
+    shouldSkipNicknameInput,
+  ]);
+
+  // Handle updates after initialization (use setValue for user-initiated changes)
+  useEffect(() => {
+    // If authenticated with nickname, always use nickname (even if user typed something)
+    if (
+      shouldSkipNicknameInput &&
+      nicknameData?.nickname &&
+      hasInitialized.current
+    ) {
+      const currentName = form.getValues("playerName");
+      if (currentName !== nicknameData.nickname) {
+        form.setValue("playerName", nicknameData.nickname);
+      }
+    }
+  }, [nicknameData, form, shouldSkipNicknameInput]);
 
   const handleSubmit = async (data: JoinFormValues) => {
     try {
@@ -117,42 +162,72 @@ function JoinGameForm() {
     }
   };
 
+  const [isExistingGamesOpen, setIsExistingGamesOpen] = useState(false);
+
+  useEffect(() => {
+    const shouldOpen =
+      currentGamesData &&
+      currentGamesData.length > 0 &&
+      !form.formState.isDirty;
+    setIsExistingGamesOpen(!!shouldOpen);
+  }, [currentGamesData, form.formState.isDirty]);
+
+  const ExistingGamesList = () => (
+    <div className="flex flex-col gap-2">
+      {currentGamesData?.map((game) => (
+        <Button
+          variant="outline"
+          key={game.id}
+          className="items-start flex-col h-auto gap-1"
+          onClick={() => {
+            form.setValue("gameCode", game.gameCode);
+            setIsExistingGamesOpen(false);
+          }}
+        >
+          <p className="font-bold">{game.gameCode}</p>
+          <div className="flex items-center justify-between w-full">
+            {game.buyInAmount && (
+              <p className="text-sm text-muted-foreground">
+                Buy-ins: {formatCurrency(+game.buyInAmount)}
+              </p>
+            )}
+            <p className="text-sm text-muted-foreground">
+              Created {formatRelativeTime(game.createdAt.toString())}
+            </p>
+          </div>
+        </Button>
+      ))}
+    </div>
+  );
+
   return (
-    <Dialog
-      open={
-        currentGamesData &&
-        currentGamesData.length > 0 &&
-        !form.formState.isDirty
-      }
-      modal={false}
-    >
-      <DialogContent position="br" className="p-4" size="sm">
-        <DialogTitle>Join existing game</DialogTitle>
-        <div className="flex flex-col gap-2">
-          {currentGamesData?.map((game) => (
-            <Button
-              variant="outline"
-              key={game.id}
-              className="items-start flex-col h-auto gap-1"
-              onClick={() => {
-                form.setValue("gameCode", game.gameCode);
-              }}
-            >
-              <p className="font-bold">{game.gameCode}</p>
-              <div className="flex items-center justify-between w-full">
-                {game.buyInAmount && (
-                  <p className="text-sm text-muted-foreground">
-                    Buy-ins: {formatCurrency(+game.buyInAmount)}
-                  </p>
-                )}
-                <p className="text-sm text-muted-foreground">
-                  Created {formatRelativeTime(game.createdAt.toString())}
-                </p>
-              </div>
-            </Button>
-          ))}
-        </div>
-      </DialogContent>
+    <>
+      {isDesktop ? (
+        <Dialog
+          open={isExistingGamesOpen}
+          onOpenChange={setIsExistingGamesOpen}
+          modal={false}
+        >
+          <DialogContent position="br" className="p-4" size="sm">
+            <DialogTitle>Join existing game</DialogTitle>
+            <ExistingGamesList />
+          </DialogContent>
+        </Dialog>
+      ) : (
+        <Drawer
+          open={isExistingGamesOpen}
+          onOpenChange={setIsExistingGamesOpen}
+        >
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Join existing game</DrawerTitle>
+            </DrawerHeader>
+            <div className="p-4">
+              <ExistingGamesList />
+            </div>
+          </DrawerContent>
+        </Drawer>
+      )}
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center space-y-2">
@@ -252,7 +327,7 @@ function JoinGameForm() {
           </Form>
         </div>
       </div>
-    </Dialog>
+    </>
   );
 }
 

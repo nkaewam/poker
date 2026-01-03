@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1762112721489,
-      "tag": "0000_dazzling_scarlet_spider",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1766602447805,
-      "tag": "0001_lowly_bullseye",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1767028270081,
-      "tag": "0002_authentication",
+      "when": 1767429615216,
+      "tag": "0000_initial-migration",
       "breakpoints": true
     }
   ]
